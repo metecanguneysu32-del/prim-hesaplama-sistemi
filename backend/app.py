@@ -2,7 +2,6 @@ from flask import Flask, jsonify, request, render_template, redirect, url_for
 from pathlib import Path
 import sys
 
-
 # ============================================================
 # DOSYA YOLLARI
 # ============================================================
@@ -11,10 +10,8 @@ BASE_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = BASE_DIR.parent
 FRONTEND_DIR = PROJECT_DIR / "frontend"
 
-
 # ============================================================
 # DATABASE MODÜLÜ
-
 # ============================================================
 
 sys.path.insert(0, str(BASE_DIR))
@@ -27,7 +24,6 @@ from database import (
     create_instore_sale
 )
 
-
 # ============================================================
 # FLASK UYGULAMASI
 # ============================================================
@@ -39,13 +35,11 @@ app = Flask(
     static_url_path="/static"
 )
 
-
 # ============================================================
 # VERİTABANINI BAŞLAT
 # ============================================================
 
 init_database()
-
 
 # ============================================================
 # ANA SAYFA
@@ -107,13 +101,25 @@ def instore_sales_page():
 
 
 # ============================================================
+# VERİ AKTARMA SAYFASI
+# ============================================================
+
+@app.route("/import")
+def import_page():
+    return render_template("import.html")
+
+
+# ============================================================
 # MAĞAZA ARAMA API
 # ============================================================
 
 @app.route("/api/stores/search", methods=["GET"])
 def api_search_stores():
 
-    search = request.args.get("q", "").strip()
+    search = request.args.get(
+        "q",
+        ""
+    ).strip()
 
     try:
 
@@ -128,7 +134,8 @@ def api_search_stores():
 
         return jsonify({
             "success": False,
-            "message": f"Mağaza araması sırasında hata oluştu: {error}"
+            "message": str(error),
+            "stores": []
         }), 500
 
 
@@ -139,15 +146,22 @@ def api_search_stores():
 @app.route("/api/personnel/search", methods=["GET"])
 def api_search_personnel():
 
-    store_id = request.args.get("store_id", type=int)
+    store_id = request.args.get(
+        "store_id",
+        type=int
+    )
 
-    search = request.args.get("q", "").strip()
+    search = request.args.get(
+        "q",
+        ""
+    ).strip()
 
     if not store_id:
 
         return jsonify({
             "success": False,
-            "message": "Mağaza seçilmedi."
+            "message": "store_id gereklidir.",
+            "personnel": []
         }), 400
 
     try:
@@ -166,82 +180,50 @@ def api_search_personnel():
 
         return jsonify({
             "success": False,
-            "message": f"Personel araması sırasında hata oluştu: {error}"
+            "message": str(error),
+            "personnel": []
         }), 500
 
 
 # ============================================================
-# KURUMSAL SATIŞ KAYDETME API
+# KURUMSAL SATIŞ EKLEME API
 # ============================================================
 
-@app.route("/api/corporate-sales", methods=["POST"])
+@app.route(
+    "/api/corporate-sales",
+    methods=["POST"]
+)
 def api_create_corporate_sale():
 
-    data = request.get_json(silent=True)
-
-    if not data:
-
-        return jsonify({
-            "success": False,
-            "message": "Gönderilen veri okunamadı."
-        }), 400
-
-    required_fields = [
-        "year",
-        "week",
-        "store_id",
-        "personnel_id",
-        "amount"
-    ]
-
-    for field in required_fields:
-
-        if field not in data:
-
-            return jsonify({
-                "success": False,
-                "message": f"{field} alanı eksik."
-            }), 400
-
     try:
 
-        year = int(data["year"])
-        week = int(data["week"])
-        store_id = int(data["store_id"])
-        personnel_id = int(data["personnel_id"])
-        amount = float(data["amount"])
+        data = request.get_json(
+            silent=True
+        ) or {}
 
-        description = data.get("description") or None
+        store_id = int(
+            data["store_id"]
+        )
 
-    except (TypeError, ValueError):
+        personnel_id = int(
+            data["personnel_id"]
+        )
 
-        return jsonify({
-            "success": False,
-            "message": "Gönderilen veriler geçersiz."
-        }), 400
+        year = int(
+            data["year"]
+        )
 
-    if year < 2000:
+        week = int(
+            data["week"]
+        )
 
-        return jsonify({
-            "success": False,
-            "message": "Geçersiz yıl."
-        }), 400
+        amount = float(
+            data["amount"]
+        )
 
-    if week < 1 or week > 53:
-
-        return jsonify({
-            "success": False,
-            "message": "Hafta 1 ile 53 arasında olmalıdır."
-        }), 400
-
-    if amount <= 0:
-
-        return jsonify({
-            "success": False,
-            "message": "Satış tutarı 0'dan büyük olmalıdır."
-        }), 400
-
-    try:
+        description = data.get(
+            "description"
+        )
 
         record_id = create_corporate_sale(
             store_id=store_id,
@@ -254,90 +236,73 @@ def api_create_corporate_sale():
 
         return jsonify({
             "success": True,
-            "message": "Kurumsal satış başarıyla kaydedildi.",
+            "message": "Kurumsal satış başarıyla eklendi.",
             "id": record_id
         })
+
+    except KeyError as error:
+
+        return jsonify({
+            "success": False,
+            "message": (
+                f"Eksik alan: {error}"
+            )
+        }), 400
+
+    except ValueError:
+
+        return jsonify({
+            "success": False,
+            "message": "Sayısal alanları kontrol edin."
+        }), 400
 
     except Exception as error:
 
         return jsonify({
             "success": False,
-            "message": f"Kurumsal satış kaydedilemedi: {error}"
+            "message": str(error)
         }), 500
 
 
 # ============================================================
-# INSTORE SATIŞ KAYDETME API
+# INSTORE SATIŞ EKLEME API
 # ============================================================
 
-@app.route("/api/instore-sales", methods=["POST"])
+@app.route(
+    "/api/instore-sales",
+    methods=["POST"]
+)
 def api_create_instore_sale():
 
-    data = request.get_json(silent=True)
-
-    if not data:
-
-        return jsonify({
-            "success": False,
-            "message": "Gönderilen veri okunamadı."
-        }), 400
-
-    required_fields = [
-        "year",
-        "week",
-        "store_id",
-        "personnel_id",
-        "amount"
-    ]
-
-    for field in required_fields:
-
-        if field not in data:
-
-            return jsonify({
-                "success": False,
-                "message": f"{field} alanı eksik."
-            }), 400
-
     try:
 
-        year = int(data["year"])
-        week = int(data["week"])
-        store_id = int(data["store_id"])
-        personnel_id = int(data["personnel_id"])
-        amount = float(data["amount"])
+        data = request.get_json(
+            silent=True
+        ) or {}
 
-        description = data.get("description") or None
+        store_id = int(
+            data["store_id"]
+        )
 
-    except (TypeError, ValueError):
+        personnel_id = int(
+            data["personnel_id"]
+        )
 
-        return jsonify({
-            "success": False,
-            "message": "Gönderilen veriler geçersiz."
-        }), 400
+        year = int(
+            data["year"]
+        )
 
-    if year < 2000:
+        week = int(
+            data["week"]
+        )
 
-        return jsonify({
-            "success": False,
-            "message": "Geçersiz yıl."
-        }), 400
+        amount = float(
+            data["amount"]
+        )
 
-    if week < 1 or week > 53:
-
-        return jsonify({
-            "success": False,
-            "message": "Hafta 1 ile 53 arasında olmalıdır."
-        }), 400
-
-    if amount <= 0:
-
-        return jsonify({
-            "success": False,
-            "message": "Satış tutarı 0'dan büyük olmalıdır."
-        }), 400
-
-    try:
+        description = data.get(
+            "description"
+        )
 
         record_id = create_instore_sale(
             store_id=store_id,
@@ -350,33 +315,98 @@ def api_create_instore_sale():
 
         return jsonify({
             "success": True,
-            "message": "InStore satış başarıyla kaydedildi.",
+            "message": "InStore satışı başarıyla eklendi.",
             "id": record_id
         })
+
+    except KeyError as error:
+
+        return jsonify({
+            "success": False,
+            "message": (
+                f"Eksik alan: {error}"
+            )
+        }), 400
+
+    except ValueError:
+
+        return jsonify({
+            "success": False,
+            "message": "Sayısal alanları kontrol edin."
+        }), 400
 
     except Exception as error:
 
         return jsonify({
             "success": False,
-            "message": f"InStore satış kaydedilemedi: {error}"
+            "message": str(error)
         }), 500
 
 
 # ============================================================
-# SAĞLIK KONTROLÜ
+# SAĞLIK / DURUM KONTROLÜ
 # ============================================================
 
-@app.route("/api/health", methods=["GET"])
+@app.route(
+    "/api/health",
+    methods=["GET"]
+)
 def health_check():
 
     return jsonify({
         "success": True,
-        "message": "Prim hesaplama sistemi çalışıyor."
+        "message": (
+            "Prim hesaplama sistemi çalışıyor."
+        )
     })
 
 
 # ============================================================
-# FLASK'I ÇALIŞTIR
+# 404 HATASI
+# ============================================================
+
+@app.errorhandler(404)
+def page_not_found(error):
+
+    return """
+    <!DOCTYPE html>
+    <html lang="tr">
+    <head>
+        <meta charset="UTF-8">
+        <title>Sayfa Bulunamadı</title>
+    </head>
+    <body>
+
+        <h1>Sayfa bulunamadı</h1>
+
+        <p>
+            İstenen sayfa mevcut değil.
+        </p>
+
+        <a href="/dashboard">
+            Dashboard'a dön
+        </a>
+
+    </body>
+    </html>
+    """, 404
+
+
+# ============================================================
+# GENEL HATA YAKALAMA
+# ============================================================
+
+@app.errorhandler(500)
+def internal_server_error(error):
+
+    return jsonify({
+        "success": False,
+        "message": "Sunucu tarafında bir hata oluştu."
+    }), 500
+
+
+# ============================================================
+# UYGULAMAYI ÇALIŞTIR
 # ============================================================
 
 if __name__ == "__main__":
