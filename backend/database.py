@@ -3,12 +3,12 @@ from pathlib import Path
 
 
 # ============================================================
-# VERİTABANI AYARLARI
+# DOSYA YOLLARI
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
 
-DATABASE_PATH = BASE_DIR / "prim_sistemi.db"
+DATABASE_FILE = BASE_DIR / "prim_hesaplama.db"
 
 
 # ============================================================
@@ -16,9 +16,8 @@ DATABASE_PATH = BASE_DIR / "prim_sistemi.db"
 # ============================================================
 
 def get_connection():
-
     connection = sqlite3.connect(
-        DATABASE_PATH
+        DATABASE_FILE
     )
 
     connection.row_factory = sqlite3.Row
@@ -31,7 +30,7 @@ def get_connection():
 
 
 # ============================================================
-# VERİTABANI OLUŞTUR
+# VERİTABANINI OLUŞTUR
 # ============================================================
 
 def init_database():
@@ -40,10 +39,9 @@ def init_database():
 
     cursor = connection.cursor()
 
-
-    # ========================================================
+    # --------------------------------------------------------
     # MAĞAZALAR
-    # ========================================================
+    # --------------------------------------------------------
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS stores (
@@ -60,17 +58,14 @@ def init_database():
 
             neighborhood TEXT,
 
-            is_active INTEGER NOT NULL DEFAULT 1,
-
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            active INTEGER NOT NULL DEFAULT 1
 
         )
     """)
 
-
-    # ========================================================
+    # --------------------------------------------------------
     # PERSONELLER
-    # ========================================================
+    # --------------------------------------------------------
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS personnel (
@@ -85,9 +80,7 @@ def init_database():
 
             title TEXT,
 
-            is_active INTEGER NOT NULL DEFAULT 1,
-
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            active INTEGER NOT NULL DEFAULT 1,
 
             FOREIGN KEY (store_id)
                 REFERENCES stores(id)
@@ -95,59 +88,24 @@ def init_database():
         )
     """)
 
-
-    # ========================================================
-    # HAFTALIK HEDEFLER
-    # ========================================================
+    # --------------------------------------------------------
+    # NORMAL SATIŞLAR
+    # --------------------------------------------------------
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS weekly_targets (
+        CREATE TABLE IF NOT EXISTS sales (
 
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            store_id INTEGER NOT NULL,
 
             year INTEGER NOT NULL,
 
             week INTEGER NOT NULL,
-
-            target_amount REAL NOT NULL DEFAULT 0,
-
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-            FOREIGN KEY (store_id)
-                REFERENCES stores(id),
-
-            UNIQUE (
-                store_id,
-                year,
-                week
-            )
-
-        )
-    """)
-
-
-    # ========================================================
-    # NORMAL SATIŞLAR
-    # ========================================================
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS normal_sales (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
 
             store_id INTEGER NOT NULL,
 
             personnel_id INTEGER NOT NULL,
 
-            year INTEGER NOT NULL,
-
-            week INTEGER NOT NULL,
-
-            sales_amount REAL NOT NULL DEFAULT 0,
-
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            amount REAL NOT NULL DEFAULT 0,
 
             FOREIGN KEY (store_id)
                 REFERENCES stores(id),
@@ -158,29 +116,26 @@ def init_database():
         )
     """)
 
-
-    # ========================================================
+    # --------------------------------------------------------
     # KURUMSAL SATIŞLAR
-    # ========================================================
+    # --------------------------------------------------------
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS corporate_sales (
 
             id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-            store_id INTEGER NOT NULL,
-
-            personnel_id INTEGER NOT NULL,
-
             year INTEGER NOT NULL,
 
             week INTEGER NOT NULL,
 
+            store_id INTEGER NOT NULL,
+
+            personnel_id INTEGER NOT NULL,
+
             amount REAL NOT NULL DEFAULT 0,
 
             description TEXT,
-
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
             FOREIGN KEY (store_id)
                 REFERENCES stores(id),
@@ -191,29 +146,26 @@ def init_database():
         )
     """)
 
-
-    # ========================================================
+    # --------------------------------------------------------
     # INSTORE SATIŞLAR
-    # ========================================================
+    # --------------------------------------------------------
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS instore_sales (
 
             id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-            store_id INTEGER NOT NULL,
-
-            personnel_id INTEGER NOT NULL,
-
             year INTEGER NOT NULL,
 
             week INTEGER NOT NULL,
 
+            store_id INTEGER NOT NULL,
+
+            personnel_id INTEGER NOT NULL,
+
             amount REAL NOT NULL DEFAULT 0,
 
             description TEXT,
-
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
             FOREIGN KEY (store_id)
                 REFERENCES stores(id),
@@ -224,78 +176,58 @@ def init_database():
         )
     """)
 
-
-    # ========================================================
-    # PRİM BAREMLERİ
-    # ========================================================
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS commission_scales (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            title TEXT NOT NULL,
-
-            min_percentage REAL NOT NULL,
-
-            max_percentage REAL,
-
-            commission_rate REAL NOT NULL DEFAULT 0,
-
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
-        )
-    """)
-
-
-    # ========================================================
-    # PRİM HESAPLAMA SONUÇLARI
-    # ========================================================
+    # --------------------------------------------------------
+    # HEDEFLER
+    # --------------------------------------------------------
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS commission_results (
+        CREATE TABLE IF NOT EXISTS targets (
 
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            personnel_id INTEGER NOT NULL,
-
-            store_id INTEGER NOT NULL,
 
             year INTEGER NOT NULL,
 
             week INTEGER NOT NULL,
 
-            normal_sales REAL NOT NULL DEFAULT 0,
-
-            corporate_sales REAL NOT NULL DEFAULT 0,
-
-            instore_sales REAL NOT NULL DEFAULT 0,
-
-            total_personnel_sales REAL NOT NULL DEFAULT 0,
-
-            store_turnover REAL NOT NULL DEFAULT 0,
+            store_id INTEGER NOT NULL,
 
             target_amount REAL NOT NULL DEFAULT 0,
 
-            achievement_percentage REAL NOT NULL DEFAULT 0,
-
-            commission_amount REAL NOT NULL DEFAULT 0,
-
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-            FOREIGN KEY (personnel_id)
-                REFERENCES personnel(id),
-
             FOREIGN KEY (store_id)
-                REFERENCES stores(id)
+                REFERENCES stores(id),
+
+            UNIQUE (
+                year,
+                week,
+                store_id
+            )
 
         )
     """)
 
+    # --------------------------------------------------------
+    # PRİM BAREMLERİ
+    # --------------------------------------------------------
 
-    # ========================================================
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS commission_bands (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            title TEXT NOT NULL,
+
+            minimum_percentage REAL NOT NULL,
+
+            maximum_percentage REAL,
+
+            commission_rate REAL NOT NULL DEFAULT 0
+
+        )
+    """)
+
+    # --------------------------------------------------------
     # İNDEKSLER
-    # ========================================================
+    # --------------------------------------------------------
 
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS
@@ -303,148 +235,41 @@ def init_database():
         ON personnel(store_id)
     """)
 
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS
+        idx_sales_store_week
+        ON sales(store_id, year, week)
+    """)
 
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS
-        idx_normal_sales_period
-        ON normal_sales(
-            store_id,
-            personnel_id,
-            year,
-            week
-        )
+        idx_sales_personnel_week
+        ON sales(personnel_id, year, week)
     """)
-
 
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS
-        idx_corporate_sales_period
-        ON corporate_sales(
-            store_id,
-            personnel_id,
-            year,
-            week
-        )
+        idx_corporate_store_week
+        ON corporate_sales(store_id, year, week)
     """)
-
 
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS
-        idx_instore_sales_period
-        ON instore_sales(
-            store_id,
-            personnel_id,
-            year,
-            week
-        )
+        idx_corporate_personnel_week
+        ON corporate_sales(personnel_id, year, week)
     """)
 
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS
+        idx_instore_store_week
+        ON instore_sales(store_id, year, week)
+    """)
 
-    connection.commit()
-
-    connection.close()
-
-
-# ============================================================
-# MAĞAZA EKLE
-# ============================================================
-
-def create_store(
-    store_code,
-    store_name,
-    city=None,
-    district=None,
-    neighborhood=None
-):
-
-    connection = get_connection()
-
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-        INSERT INTO stores (
-            store_code,
-            store_name,
-            city,
-            district,
-            neighborhood
-        )
-
-        VALUES (?, ?, ?, ?, ?)
-
-        ON CONFLICT(store_code)
-        DO UPDATE SET
-
-            store_name = excluded.store_name,
-
-            city = excluded.city,
-
-            district = excluded.district,
-
-            neighborhood = excluded.neighborhood
-
-        """,
-        (
-            store_code,
-            store_name,
-            city,
-            district,
-            neighborhood
-        )
-    )
-
-    connection.commit()
-
-    connection.close()
-
-
-# ============================================================
-# PERSONEL EKLE
-# ============================================================
-
-def create_personnel(
-    personnel_code,
-    personnel_name,
-    store_id,
-    title=None
-):
-
-    connection = get_connection()
-
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-        INSERT INTO personnel (
-            personnel_code,
-            personnel_name,
-            store_id,
-            title
-        )
-
-        VALUES (?, ?, ?, ?)
-
-        ON CONFLICT(personnel_code)
-        DO UPDATE SET
-
-            personnel_name =
-                excluded.personnel_name,
-
-            store_id =
-                excluded.store_id,
-
-            title =
-                excluded.title
-
-        """,
-        (
-            personnel_code,
-            personnel_name,
-            store_id,
-            title
-        )
-    )
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS
+        idx_instore_personnel_week
+        ON instore_sales(personnel_id, year, week)
+    """)
 
     connection.commit()
 
@@ -455,20 +280,15 @@ def create_personnel(
 # MAĞAZA ARAMA
 # ============================================================
 
-def search_stores(
-    search=""
-):
+def search_stores(search=""):
 
     connection = get_connection()
 
     cursor = connection.cursor()
 
-
     search_value = f"%{search.strip()}%"
 
-
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT
             id,
             store_code,
@@ -476,33 +296,28 @@ def search_stores(
             city,
             district,
             neighborhood
-
         FROM stores
-
-        WHERE is_active = 1
-
-        AND (
-            store_code LIKE ?
-            OR store_name LIKE ?
-        )
-
+        WHERE active = 1
+          AND (
+                store_code LIKE ?
+                OR store_name LIKE ?
+                OR city LIKE ?
+                OR district LIKE ?
+                OR neighborhood LIKE ?
+          )
         ORDER BY store_code
-
-        LIMIT 30
-
-        """,
-        (
-            search_value,
-            search_value
-        )
-    )
-
+        LIMIT 50
+    """, (
+        search_value,
+        search_value,
+        search_value,
+        search_value,
+        search_value
+    ))
 
     rows = cursor.fetchall()
 
-
     connection.close()
-
 
     return [
         dict(row)
@@ -523,50 +338,33 @@ def search_personnel(
 
     cursor = connection.cursor()
 
+    search_value = f"%{search.strip()}%"
 
-    search_value =
-        f"%{search.strip()}%"
-
-
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT
             id,
             personnel_code,
             personnel_name,
             store_id,
             title
-
         FROM personnel
-
-        WHERE is_active = 1
-
-        AND store_id = ?
-
-        AND (
-            personnel_code LIKE ?
-            OR personnel_name LIKE ?
-        )
-
+        WHERE active = 1
+          AND store_id = ?
+          AND (
+                personnel_code LIKE ?
+                OR personnel_name LIKE ?
+          )
         ORDER BY personnel_name
+        LIMIT 50
+    """, (
+        store_id,
+        search_value,
+        search_value
+    ))
 
-        LIMIT 30
-
-        """,
-        (
-            store_id,
-            search_value,
-            search_value
-        )
-    )
-
-
-    rows =
-        cursor.fetchall()
-
+    rows = cursor.fetchall()
 
     connection.close()
-
 
     return [
         dict(row)
@@ -591,46 +389,30 @@ def create_corporate_sale(
 
     cursor = connection.cursor()
 
-
-    cursor.execute(
-        """
+    cursor.execute("""
         INSERT INTO corporate_sales (
-
-            store_id,
-
-            personnel_id,
-
             year,
-
             week,
-
+            store_id,
+            personnel_id,
             amount,
-
             description
-
         )
-
         VALUES (?, ?, ?, ?, ?, ?)
-
-        """,
-        (
-            store_id,
-            personnel_id,
-            year,
-            week,
-            amount,
-            description
-        )
-    )
-
-
-    connection.commit()
+    """, (
+        year,
+        week,
+        store_id,
+        personnel_id,
+        amount,
+        description
+    ))
 
     record_id = cursor.lastrowid
 
+    connection.commit()
 
     connection.close()
-
 
     return record_id
 
@@ -652,63 +434,515 @@ def create_instore_sale(
 
     cursor = connection.cursor()
 
-
-    cursor.execute(
-        """
+    cursor.execute("""
         INSERT INTO instore_sales (
-
-            store_id,
-
-            personnel_id,
-
             year,
-
             week,
-
+            store_id,
+            personnel_id,
             amount,
-
             description
-
         )
-
         VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        year,
+        week,
+        store_id,
+        personnel_id,
+        amount,
+        description
+    ))
 
-        """,
-        (
-            store_id,
-            personnel_id,
-            year,
-            week,
-            amount,
-            description
-        )
-    )
-
+    record_id = cursor.lastrowid
 
     connection.commit()
 
-    record_id =
-        cursor.lastrowid
-
-
     connection.close()
-
 
     return record_id
 
 
 # ============================================================
-# VERİTABANI TESTİ
+# NORMAL SATIŞ EKLE
 # ============================================================
 
-if __name__ == "__main__":
+def create_sale(
+    store_id,
+    personnel_id,
+    year,
+    week,
+    amount
+):
 
-    init_database()
+    connection = get_connection()
 
-    print(
-        "Veritabanı başarıyla oluşturuldu:"
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        INSERT INTO sales (
+            year,
+            week,
+            store_id,
+            personnel_id,
+            amount
+        )
+        VALUES (?, ?, ?, ?, ?)
+    """, (
+        year,
+        week,
+        store_id,
+        personnel_id,
+        amount
+    ))
+
+    record_id = cursor.lastrowid
+
+    connection.commit()
+
+    connection.close()
+
+    return record_id
+
+
+# ============================================================
+# MAĞAZA EKLE
+# ============================================================
+
+def create_store(
+    store_code,
+    store_name,
+    city=None,
+    district=None,
+    neighborhood=None
+):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        INSERT INTO stores (
+            store_code,
+            store_name,
+            city,
+            district,
+            neighborhood
+        )
+        VALUES (?, ?, ?, ?, ?)
+    """, (
+        store_code,
+        store_name,
+        city,
+        district,
+        neighborhood
+    ))
+
+    record_id = cursor.lastrowid
+
+    connection.commit()
+
+    connection.close()
+
+    return record_id
+
+
+# ============================================================
+# PERSONEL EKLE
+# ============================================================
+
+def create_personnel(
+    personnel_code,
+    personnel_name,
+    store_id,
+    title=None
+):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        INSERT INTO personnel (
+            personnel_code,
+            personnel_name,
+            store_id,
+            title
+        )
+        VALUES (?, ?, ?, ?)
+    """, (
+        personnel_code,
+        personnel_name,
+        store_id,
+        title
+    ))
+
+    record_id = cursor.lastrowid
+
+    connection.commit()
+
+    connection.close()
+
+    return record_id
+
+
+# ============================================================
+# NORMAL SATIŞ TOPLAMI
+# ============================================================
+
+def get_normal_sales_total(
+    store_id,
+    personnel_id,
+    year,
+    week
+):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            COALESCE(
+                SUM(amount),
+                0
+            )
+        FROM sales
+        WHERE store_id = ?
+          AND personnel_id = ?
+          AND year = ?
+          AND week = ?
+    """, (
+        store_id,
+        personnel_id,
+        year,
+        week
+    ))
+
+    result = cursor.fetchone()[0]
+
+    connection.close()
+
+    return float(result)
+
+
+# ============================================================
+# KURUMSAL SATIŞ TOPLAMI
+# ============================================================
+
+def get_corporate_sales_total(
+    store_id,
+    personnel_id,
+    year,
+    week
+):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            COALESCE(
+                SUM(amount),
+                0
+            )
+        FROM corporate_sales
+        WHERE store_id = ?
+          AND personnel_id = ?
+          AND year = ?
+          AND week = ?
+    """, (
+        store_id,
+        personnel_id,
+        year,
+        week
+    ))
+
+    result = cursor.fetchone()[0]
+
+    connection.close()
+
+    return float(result)
+
+
+# ============================================================
+# INSTORE SATIŞ TOPLAMI
+# ============================================================
+
+def get_instore_sales_total(
+    store_id,
+    personnel_id,
+    year,
+    week
+):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            COALESCE(
+                SUM(amount),
+                0
+            )
+        FROM instore_sales
+        WHERE store_id = ?
+          AND personnel_id = ?
+          AND year = ?
+          AND week = ?
+    """, (
+        store_id,
+        personnel_id,
+        year,
+        week
+    ))
+
+    result = cursor.fetchone()[0]
+
+    connection.close()
+
+    return float(result)
+
+
+# ============================================================
+# PERSONEL TOPLAM SATIŞI
+#
+# NORMAL + KURUMSAL + INSTORE
+# ============================================================
+
+def get_personnel_total_sales(
+    store_id,
+    personnel_id,
+    year,
+    week
+):
+
+    normal_sales = get_normal_sales_total(
+        store_id,
+        personnel_id,
+        year,
+        week
     )
 
-    print(
-        DATABASE_PATH
+    corporate_sales = get_corporate_sales_total(
+        store_id,
+        personnel_id,
+        year,
+        week
     )
+
+    instore_sales = get_instore_sales_total(
+        store_id,
+        personnel_id,
+        year,
+        week
+    )
+
+    return (
+        normal_sales
+        + corporate_sales
+        + instore_sales
+    )
+
+
+# ============================================================
+# MAĞAZA CİROSU
+#
+# NORMAL + KURUMSAL + INSTORE
+# ============================================================
+
+def get_store_total_sales(
+    store_id,
+    year,
+    week
+):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            COALESCE(
+                SUM(amount),
+                0
+            )
+        FROM sales
+        WHERE store_id = ?
+          AND year = ?
+          AND week = ?
+    """, (
+        store_id,
+        year,
+        week
+    ))
+
+    normal_sales = cursor.fetchone()[0]
+
+    cursor.execute("""
+        SELECT
+            COALESCE(
+                SUM(amount),
+                0
+            )
+        FROM corporate_sales
+        WHERE store_id = ?
+          AND year = ?
+          AND week = ?
+    """, (
+        store_id,
+        year,
+        week
+    ))
+
+    corporate_sales = cursor.fetchone()[0]
+
+    cursor.execute("""
+        SELECT
+            COALESCE(
+                SUM(amount),
+                0
+            )
+        FROM instore_sales
+        WHERE store_id = ?
+          AND year = ?
+          AND week = ?
+    """, (
+        store_id,
+        year,
+        week
+    ))
+
+    instore_sales = cursor.fetchone()[0]
+
+    connection.close()
+
+    return float(
+        normal_sales
+        + corporate_sales
+        + instore_sales
+    )
+
+
+# ============================================================
+# HEDEF EKLE / GÜNCELLE
+# ============================================================
+
+def save_target(
+    store_id,
+    year,
+    week,
+    target_amount
+):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        INSERT INTO targets (
+            year,
+            week,
+            store_id,
+            target_amount
+        )
+        VALUES (?, ?, ?, ?)
+
+        ON CONFLICT (
+            year,
+            week,
+            store_id
+        )
+
+        DO UPDATE SET
+            target_amount = excluded.target_amount
+    """, (
+        year,
+        week,
+        store_id,
+        target_amount
+    ))
+
+    connection.commit()
+
+    connection.close()
+
+
+# ============================================================
+# HEDEF GETİR
+# ============================================================
+
+def get_target(
+    store_id,
+    year,
+    week
+):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            target_amount
+        FROM targets
+        WHERE store_id = ?
+          AND year = ?
+          AND week = ?
+    """, (
+        store_id,
+        year,
+        week
+    ))
+
+    row = cursor.fetchone()
+
+    connection.close()
+
+    if row is None:
+        return 0.0
+
+    return float(
+        row["target_amount"]
+    )
+
+
+# ============================================================
+# MAĞAZA CİROSU + HEDEF
+# ============================================================
+
+def get_store_performance(
+    store_id,
+    year,
+    week
+):
+
+    sales = get_store_total_sales(
+        store_id,
+        year,
+        week
+    )
+
+    target = get_target(
+        store_id,
+        year,
+        week
+    )
+
+    if target > 0:
+
+        achievement_percentage = (
+            sales / target
+        ) * 100
+
+    else:
+
+        achievement_percentage = 0
+
+    return {
+        "sales": sales,
+        "target": target,
+        "achievement_percentage":
+            achievement_percentage
+    }
