@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Giriş | Prim Hesaplama Sistemi
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <style>
+
+        /* =========================================
+           GİRİŞ SAYFASI
+           ========================================= */
+
+        body {
+            min-height: 100vh;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            background: #f4f6f9;
+        }
+
+
+        .login-wrapper {
+            width: 100%;
+
+            max-width: 430px;
+
+            padding: 20px;
+        }
+
+
+        .login-card {
+            background: #ffffff;
+
+            border: 1px solid #e5e7eb;
+
+            border-radius: 14px;
+
+            padding: 35px;
+
+            box-shadow:
+                0 8px 30px rgba(0, 0, 0, 0.06);
+        }
+
+
+        .login-header {
+            text-align: center;
+
+            margin-bottom: 30px;
+        }
+
+
+        .login-logo {
+            width: 64px;
+
+            height: 64px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            margin: 0 auto 18px;
+
+            border-radius: 14px;
+
+            background: #2563eb;
+
+            color: #ffffff;
+
+            font-size: 28px;
+
+            font-weight: 700;
+        }
+
+
+        .login-header h1 {
+            font-size: 24px;
+
+            color: #111827;
+
+            margin-bottom: 8px;
+        }
+
+
+        .login-header p {
+            color: #6b7280;
+
+            font-size: 14px;
+
+            line-height: 1.5;
+        }
+
+
+        .login-form {
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 18px;
+        }
+
+
+        .login-form .form-group {
+            margin-bottom: 0;
+        }
+
+
+        .login-button {
+            width: 100%;
+
+            height: 46px;
+
+            border: none;
+
+            border-radius: 8px;
+
+            background: #2563eb;
+
+            color: #ffffff;
+
+            font-size: 15px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+
+        .login-button:hover {
+            background: #1d4ed8;
+        }
+
+
+        .login-button:disabled {
+            opacity: 0.6;
+
+            cursor: not-allowed;
+        }
+
+
+        .login-error {
+            display: none;
+
+            padding: 12px 14px;
+
+            border-radius: 8px;
+
+            background: #fef2f2;
+
+            border: 1px solid #fecaca;
+
+            color: #991b1b;
+
+            font-size: 13px;
+
+            line-height: 1.5;
+        }
+
+
+        .login-footer {
+            margin-top: 25px;
+
+            padding-top: 20px;
+
+            border-top: 1px solid #e5e7eb;
+
+            text-align: center;
+
+            color: #9ca3af;
+
+            font-size: 12px;
+        }
+
+
+        @media (max-width: 500px) {
+
+            .login-wrapper {
+                padding: 15px;
+            }
+
+
+            .login-card {
+                padding: 25px 20px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <div class="login-wrapper">
+
+        <div class="login-card">
+
+            <!-- =====================================
+                 BAŞLIK
+                 ===================================== -->
+
+            <div class="login-header">
+
+                <div class="login-logo">
+                    P
+                </div>
+
+                <h1>
+                    Prim Hesaplama Sistemi
+                </h1>
+
+                <p>
+                    Raporlama ekibi giriş ekranı
+                </p>
+
+            </div>
+
+
+            <!-- =====================================
+                 GİRİŞ FORMU
+                 ===================================== -->
+
+            <form
+                id="loginForm"
+                class="login-form"
+            >
+
+                <div class="form-group">
+
+                    <label for="username">
+                        Kullanıcı Adı
+                    </label>
+
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Kullanıcı adınızı girin"
+                        autocomplete="username"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="password">
+                        Şifre
+                    </label>
+
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Şifrenizi girin"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                </div>
+
+
+                <div
+                    id="loginError"
+                    class="login-error"
+                >
+                </div>
+
+
+                <button
+                    type="submit"
+                    id="loginButton"
+                    class="login-button"
+                >
+                    Giriş Yap
+                </button>
+
+            </form>
+
+
+            <!-- =====================================
+                 ALT BİLGİ
+                 ===================================== -->
+
+            <div class="login-footer">
+
+                Prim Hesaplama Sistemi
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         JAVASCRIPT
+         ========================================= -->
+
+    <script>
+
+        const loginForm =
+            document.getElementById(
+                "loginForm"
+            );
+
+
+        const loginButton =
+            document.getElementById(
+                "loginButton"
+            );
+
+
+        const loginError =
+            document.getElementById(
+                "loginError"
+            );
+
+
+        loginForm.addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+
+                const username =
+                    document.getElementById(
+                        "username"
+                    ).value.trim();
+
+
+                const password =
+                    document.getElementById(
+                        "password"
+                    ).value;
+
+
+                loginError.style.display =
+                    "none";
+
+
+                if (!username) {
+
+                    showError(
+                        "Kullanıcı adı giriniz."
+                    );
+
+                    return;
+                }
+
+
+                if (!password) {
+
+                    showError(
+                        "Şifre giriniz."
+                    );
+
+                    return;
+                }
+
+
+                loginButton.disabled =
+                    true;
+
+                loginButton.textContent =
+                    "Giriş yapılıyor...";
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "/api/login",
+                            {
+                                method: "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                                body: JSON.stringify({
+                                    username:
+                                        username,
+
+                                    password:
+                                        password
+                                })
+                            }
+                        );
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            data.message ||
+                            "Giriş başarısız."
+                        );
+
+                    }
+
+
+                    if (!data.success) {
+
+                        throw new Error(
+                            data.message ||
+                            "Kullanıcı adı veya şifre hatalı."
+                        );
+
+                    }
+
+
+                    window.location.href =
+                        "/dashboard";
+
+                }
+
+                catch (error) {
+
+                    showError(
+                        error.message
+                    );
+
+                }
+
+                finally {
+
+                    loginButton.disabled =
+                        false;
+
+                    loginButton.textContent =
+                        "Giriş Yap";
+
+                }
+
+            }
+        );
+
+
+        function showError(message) {
+
+            loginError.textContent =
+                message;
+
+            loginError.style.display =
+                "block";
+
+        }
+
+    </script>
+
+</body>
+
+</html>

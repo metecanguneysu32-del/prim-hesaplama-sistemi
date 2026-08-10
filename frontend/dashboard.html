@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Dashboard | Prim Hesaplama Sistemi
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <style>
+
+        /* =========================================
+           DASHBOARD
+           ========================================= */
+
+        .dashboard-header {
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 20px;
+
+            margin-bottom: 30px;
+        }
+
+
+        .dashboard-title h1 {
+            font-size: 30px;
+
+            color: #111827;
+
+            margin-bottom: 7px;
+        }
+
+
+        .dashboard-title p {
+            color: #6b7280;
+
+            font-size: 14px;
+        }
+
+
+        .logout-button {
+            padding: 10px 18px;
+
+            border: 1px solid #d1d5db;
+
+            border-radius: 8px;
+
+            background: #ffffff;
+
+            color: #374151;
+
+            font-size: 14px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+        }
+
+
+        .logout-button:hover {
+            background: #f9fafb;
+        }
+
+
+        /* =========================================
+           İSTATİSTİKLER
+           ========================================= */
+
+        .stats-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+
+            gap: 18px;
+
+            margin-bottom: 25px;
+        }
+
+
+        .stat-card {
+            background: #ffffff;
+
+            border: 1px solid #e5e7eb;
+
+            border-radius: 12px;
+
+            padding: 22px;
+
+            box-shadow:
+                0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+
+        .stat-label {
+            color: #6b7280;
+
+            font-size: 13px;
+
+            margin-bottom: 10px;
+        }
+
+
+        .stat-value {
+            color: #111827;
+
+            font-size: 27px;
+
+            font-weight: 700;
+        }
+
+
+        .stat-description {
+            margin-top: 8px;
+
+            color: #9ca3af;
+
+            font-size: 12px;
+        }
+
+
+        /* =========================================
+           HIZLI İŞLEMLER
+           ========================================= */
+
+        .quick-actions {
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+
+            gap: 15px;
+        }
+
+
+        .action-card {
+            display: block;
+
+            padding: 22px;
+
+            border: 1px solid #e5e7eb;
+
+            border-radius: 10px;
+
+            background: #ffffff;
+
+            transition: 0.2s;
+        }
+
+
+        .action-card:hover {
+            border-color: #2563eb;
+
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 5px 15px rgba(0, 0, 0, 0.06);
+        }
+
+
+        .action-icon {
+            font-size: 25px;
+
+            margin-bottom: 12px;
+        }
+
+
+        .action-card h3 {
+            margin: 0 0 7px;
+
+            color: #111827;
+
+            font-size: 16px;
+        }
+
+
+        .action-card p {
+            color: #6b7280;
+
+            font-size: 13px;
+
+            line-height: 1.5;
+        }
+
+
+        /* =========================================
+           DÖNEM
+           ========================================= */
+
+        .period-bar {
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 15px;
+
+            margin-bottom: 25px;
+
+            padding: 16px 20px;
+
+            background: #ffffff;
+
+            border: 1px solid #e5e7eb;
+
+            border-radius: 10px;
+        }
+
+
+        .period-info strong {
+            color: #111827;
+
+            font-size: 14px;
+        }
+
+
+        .period-info span {
+            color: #6b7280;
+
+            font-size: 13px;
+
+            margin-left: 8px;
+        }
+
+
+        .period-controls {
+            display: flex;
+
+            gap: 10px;
+        }
+
+
+        .period-controls select {
+            height: 38px;
+
+            padding: 0 10px;
+
+            border: 1px solid #d1d5db;
+
+            border-radius: 7px;
+
+            background: #ffffff;
+        }
+
+
+        /* =========================================
+           YÜKLENİYOR
+           ========================================= */
+
+        .dashboard-loading {
+            color: #6b7280;
+
+            font-size: 14px;
+        }
+
+
+        /* =========================================
+           RESPONSIVE
+           ========================================= */
+
+        @media (max-width: 1000px) {
+
+            .stats-grid {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+
+            .quick-actions {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+        }
+
+
+        @media (max-width: 650px) {
+
+            .dashboard-header {
+                flex-direction: column;
+
+                align-items: flex-start;
+            }
+
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+
+
+            .period-bar {
+                flex-direction: column;
+
+                align-items: flex-start;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <div class="page">
+
+        <!-- =====================================
+             ÜST BAŞLIK
+             ===================================== -->
+
+        <header class="dashboard-header">
+
+            <div class="dashboard-title">
+
+                <h1>
+                    Prim Hesaplama Sistemi
+                </h1>
+
+                <p>
+                    Raporlama Yönetim Paneli
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="logoutButton"
+                class="logout-button"
+            >
+                Çıkış Yap
+            </button>
+
+        </header>
+
+
+        <!-- =====================================
+             DÖNEM SEÇİMİ
+             ===================================== -->
+
+        <section class="period-bar">
+
+            <div class="period-info">
+
+                <strong>
+                    Aktif Dönem
+                </strong>
+
+                <span id="activePeriod">
+                    Yükleniyor...
+                </span>
+
+            </div>
+
+
+            <div class="period-controls">
+
+                <select id="yearSelect">
+
+                    <option value="2026">
+                        2026
+                    </option>
+
+                    <option value="2027">
+                        2027
+                    </option>
+
+                    <option value="2028">
+                        2028
+                    </option>
+
+                </select>
+
+
+                <select id="weekSelect">
+
+                    <option value="">
+                        Hafta
+                    </option>
+
+                </select>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================
+             İSTATİSTİKLER
+             ===================================== -->
+
+        <section class="stats-grid">
+
+
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    Mağaza Sayısı
+                </div>
+
+                <div
+                    id="storeCount"
+                    class="stat-value"
+                >
+                    0
+                </div>
+
+                <div class="stat-description">
+                    Sistemde aktif mağazalar
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    Personel Sayısı
+                </div>
+
+                <div
+                    id="personnelCount"
+                    class="stat-value"
+                >
+                    0
+                </div>
+
+                <div class="stat-description">
+                    Aktif personeller
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    Toplam Satış
+                </div>
+
+                <div
+                    id="totalSales"
+                    class="stat-value"
+                >
+                    ₺0
+                </div>
+
+                <div class="stat-description">
+                    Seçilen dönemin normal satışları
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    Toplam Hedef
+                </div>
+
+                <div
+                    id="totalTarget"
+                    class="stat-value"
+                >
+                    ₺0
+                </div>
+
+                <div class="stat-description">
+                    Seçilen dönem hedefi
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================
+             HIZLI İŞLEMLER
+             ===================================== -->
+
+        <section class="card">
+
+            <h2>
+                Hızlı İşlemler
+            </h2>
+
+
+            <div class="quick-actions">
+
+
+                <a
+                    href="/veri-aktarma"
+                    class="action-card"
+                >
+
+                    <div class="action-icon">
+                        📥
+                    </div>
+
+                    <h3>
+                        Veri Aktarma
+                    </h3>
+
+                    <p>
+                        Mağaza, personel, hedef ve
+                        satış Excel dosyalarını sisteme aktarın.
+                    </p>
+
+                </a>
+
+
+                <a
+                    href="/kurumsal-satis"
+                    class="action-card"
+                >
+
+                    <div class="action-icon">
+                        🏢
+                    </div>
+
+                    <h3>
+                        Kurumsal Satış
+                    </h3>
+
+                    <p>
+                        Manuel olarak kurumsal satış
+                        tutarlarını sisteme girin.
+                    </p>
+
+                </a>
+
+
+                <a
+                    href="/instore-satis"
+                    class="action-card"
+                >
+
+                    <div class="action-icon">
+                        🛒
+                    </div>
+
+                    <h3>
+                        InStore Satışı
+                    </h3>
+
+                    <p>
+                        Manuel InStore satışlarını
+                        sisteme ekleyin.
+                    </p>
+
+                </a>
+
+
+                <a
+                    href="/raporlar"
+                    class="action-card"
+                >
+
+                    <div class="action-icon">
+                        📊
+                    </div>
+
+                    <h3>
+                        Prim Raporları
+                    </h3>
+
+                    <p>
+                        Prim hesaplamalarını ve
+                        mağaza/personel raporlarını görüntüleyin.
+                    </p>
+
+                </a>
+
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================
+             BİLGİ
+             ===================================== -->
+
+        <section class="card">
+
+            <h2>
+                Sistem Durumu
+            </h2>
+
+
+            <p
+                id="systemStatus"
+                class="dashboard-loading"
+            >
+                Sistem kontrol ediliyor...
+            </p>
+
+        </section>
+
+    </div>
+
+
+    <!-- =========================================
+         JAVASCRIPT
+         ========================================= -->
+
+    <script>
+
+        const yearSelect =
+            document.getElementById(
+                "yearSelect"
+            );
+
+
+        const weekSelect =
+            document.getElementById(
+                "weekSelect"
+            );
+
+
+        const activePeriod =
+            document.getElementById(
+                "activePeriod"
+            );
+
+
+        const logoutButton =
+            document.getElementById(
+                "logoutButton"
+            );
+
+
+        // =========================================
+        // HAFTA LİSTESİ
+        // =========================================
+
+        function createWeekList() {
+
+            weekSelect.innerHTML =
+                '<option value="">Hafta</option>';
+
+
+            for (
+                let week = 1;
+                week <= 53;
+                week++
+            ) {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value =
+                    week;
+
+                option.textContent =
+                    week + ". Hafta";
+
+                weekSelect.appendChild(
+                    option
+                );
+
+            }
+
+        }
+
+
+        // =========================================
+        // DÖNEM GÖSTER
+        // =========================================
+
+        function updatePeriod() {
+
+            const year =
+                yearSelect.value;
+
+            const week =
+                weekSelect.value;
+
+
+            if (!week) {
+
+                activePeriod.textContent =
+                    year + " yılı";
+
+                return;
+            }
+
+
+            activePeriod.textContent =
+                year +
+                " / " +
+                week +
+                ". Hafta";
+
+        }
+
+
+        yearSelect.addEventListener(
+            "change",
+            updatePeriod
+        );
+
+
+        weekSelect.addEventListener(
+            "change",
+            updatePeriod
+        );
+
+
+        // =========================================
+        // SİSTEM KONTROLÜ
+        // =========================================
+
+        async function checkSystem() {
+
+            const status =
+                document.getElementById(
+                    "systemStatus"
+                );
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/health"
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (
+                    response.ok &&
+                    data.status === "ok"
+                ) {
+
+                    status.textContent =
+                        "✓ Sistem çalışıyor.";
+
+                    status.style.color =
+                        "#15803d";
+
+                }
+
+                else {
+
+                    status.textContent =
+                        "Sistem bağlantısında sorun var.";
+
+                }
+
+            }
+
+            catch (error) {
+
+                status.textContent =
+                    "Sunucuya bağlanılamadı.";
+
+                status.style.color =
+                    "#dc2626";
+
+            }
+
+        }
+
+
+        // =========================================
+        // DASHBOARD VERİLERİ
+        // =========================================
+
+        async function loadDashboard() {
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/dashboard"
+                    );
+
+
+                if (!response.ok) {
+                    return;
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                if (!data.success) {
+                    return;
+                }
+
+
+                document.getElementById(
+                    "storeCount"
+                ).textContent =
+                    data.store_count;
+
+
+                document.getElementById(
+                    "personnelCount"
+                ).textContent =
+                    data.personnel_count;
+
+
+                document.getElementById(
+                    "totalSales"
+                ).textContent =
+                    formatMoney(
+                        data.total_sales
+                    );
+
+
+                document.getElementById(
+                    "totalTarget"
+                ).textContent =
+                    formatMoney(
+                        data.total_target
+                    );
+
+            }
+
+            catch (error) {
+
+                console.log(
+                    "Dashboard verileri alınamadı.",
+                    error
+                );
+
+            }
+
+        }
+
+
+        // =========================================
+        // PARA FORMAT
+        // =========================================
+
+        function formatMoney(value) {
+
+            const number =
+                Number(value || 0);
+
+
+            return number.toLocaleString(
+                "tr-TR",
+                {
+                    style: "currency",
+                    currency: "TRY",
+                    maximumFractionDigits: 2
+                }
+            );
+
+        }
+
+
+        // =========================================
+        // ÇIKIŞ
+        // =========================================
+
+        logoutButton.addEventListener(
+            "click",
+            async function() {
+
+                try {
+
+                    await fetch(
+                        "/api/logout",
+                        {
+                            method: "POST"
+                        }
+                    );
+
+                }
+
+                catch (error) {
+
+                    console.log(error);
+
+                }
+
+
+                window.location.href =
+                    "/";
+
+            }
+        );
+
+
+        // =========================================
+        // BAŞLANGIÇ
+        // =========================================
+
+        createWeekList();
+
+        updatePeriod();
+
+        checkSystem();
+
+        loadDashboard();
+
+    </script>
+
+</body>
+
+</html>

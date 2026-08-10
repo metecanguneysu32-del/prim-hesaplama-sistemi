@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Veri Aktarma | Prim Hesaplama Sistemi
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <style>
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            margin: 0 0 7px;
+            color: #111827;
+            font-size: 28px;
+        }
+
+        .page-header p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .back-button {
+            text-decoration: none;
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #374151;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .back-button:hover {
+            background: #f9fafb;
+        }
+
+        .import-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .import-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .import-card h2 {
+            margin: 0 0 8px;
+            color: #111827;
+            font-size: 19px;
+        }
+
+        .import-card-description {
+            margin-bottom: 20px;
+            color: #6b7280;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .file-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            background: #fafafa;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .file-area:hover {
+            border-color: #2563eb;
+            background: #f8faff;
+        }
+
+        .file-icon {
+            font-size: 35px;
+            margin-bottom: 10px;
+        }
+
+        .file-area strong {
+            display: block;
+            margin-bottom: 6px;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .file-area span {
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .selected-file {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            word-break: break-word;
+        }
+
+        .upload-button {
+            width: 100%;
+            margin-top: 15px;
+            height: 42px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .upload-button:hover {
+            background: #1d4ed8;
+        }
+
+        .upload-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .result-box {
+            display: none;
+            margin-top: 15px;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .result-success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .result-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .period-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+        }
+
+        .period-section h2 {
+            margin: 0 0 15px;
+            font-size: 17px;
+            color: #111827;
+        }
+
+        .period-fields {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 220px));
+            gap: 15px;
+        }
+
+        .info-box {
+            margin-top: 25px;
+            padding: 18px;
+            border-radius: 10px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+        }
+
+        .info-box h3 {
+            margin: 0 0 10px;
+            font-size: 15px;
+            color: #111827;
+        }
+
+        .info-box ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #6b7280;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .loading-text {
+            display: none;
+            margin-top: 12px;
+            color: #6b7280;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        @media (max-width: 800px) {
+
+            .import-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+        }
+
+        @media (max-width: 500px) {
+
+            .period-fields {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="page">
+
+
+    <!-- =========================================
+         BAŞLIK
+         ========================================= -->
+
+    <header class="page-header">
+
+        <div>
+
+            <h1>
+                Veri Aktarma
+            </h1>
+
+            <p>
+                Excel dosyalarını sisteme aktarın.
+            </p>
+
+        </div>
+
+        <a
+            href="/dashboard"
+            class="back-button"
+        >
+            ← Dashboard
+        </a>
+
+    </header>
+
+
+    <!-- =========================================
+         DÖNEM
+         ========================================= -->
+
+    <section class="period-section">
+
+        <h2>
+            Aktarım Dönemi
+        </h2>
+
+        <div class="period-fields">
+
+            <div class="form-group">
+
+                <label for="year">
+                    Yıl
+                </label>
+
+                <select id="year">
+
+                    <option value="2026">
+                        2026
+                    </option>
+
+                    <option value="2027">
+                        2027
+                    </option>
+
+                    <option value="2028">
+                        2028
+                    </option>
+
+                    <option value="2029">
+                        2029
+                    </option>
+
+                    <option value="2030">
+                        2030
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="week">
+                    Hafta
+                </label>
+
+                <select id="week">
+
+                    <option value="">
+                        Hafta seçin
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================================
+         EXCEL AKTARIMLARI
+         ========================================= -->
+
+    <div class="import-grid">
+
+
+        <!-- =====================================
+             MAĞAZALAR
+             ===================================== -->
+
+        <section class="import-card">
+
+            <h2>
+                🏬 Mağaza Aktarımı
+            </h2>
+
+            <div class="import-card-description">
+
+                Mağaza kodu ve mağaza adı bilgilerinin
+                bulunduğu Excel dosyasını yükleyin.
+
+            </div>
+
+
+            <label
+                class="file-area"
+                for="storesFile"
+            >
+
+                <div class="file-icon">
+                    📄
+                </div>
+
+                <strong>
+                    Excel dosyası seç
+                </strong>
+
+                <span>
+                    XLS veya XLSX
+                </span>
+
+            </label>
+
+
+            <input
+                type="file"
+                id="storesFile"
+                class="file-input"
+                accept=".xlsx,.xls"
+            >
+
+
+            <div
+                id="storesSelected"
+                class="selected-file"
+            >
+            </div>
+
+
+            <button
+                type="button"
+                id="storesButton"
+                class="upload-button"
+            >
+                Mağazaları Aktar
+            </button>
+
+
+            <div
+                id="storesResult"
+                class="result-box"
+            >
+            </div>
+
+
+            <div
+                id="storesLoading"
+                class="loading-text"
+            >
+                Dosya işleniyor...
+            </div>
+
+        </section>
+
+
+        <!-- =====================================
+             PERSONELLER
+             ===================================== -->
+
+        <section class="import-card">
+
+            <h2>
+                👥 Personel Aktarımı
+            </h2>
+
+            <div class="import-card-description">
+
+                Mağaza ve personel bilgilerinin
+                bulunduğu Excel dosyasını yükleyin.
+
+            </div>
+
+
+            <label
+                class="file-area"
+                for="personnelFile"
+            >
+
+                <div class="file-icon">
+                    📄
+                </div>
+
+                <strong>
+                    Excel dosyası seç
+                </strong>
+
+                <span>
+                    XLS veya XLSX
+                </span>
+
+            </label>
+
+
+            <input
+                type="file"
+                id="personnelFile"
+                class="file-input"
+                accept=".xlsx,.xls"
+            >
+
+
+            <div
+                id="personnelSelected"
+                class="selected-file"
+            >
+            </div>
+
+
+            <button
+                type="button"
+                id="personnelButton"
+                class="upload-button"
+            >
+                Personelleri Aktar
+            </button>
+
+
+            <div
+                id="personnelResult"
+                class="result-box"
+            >
+            </div>
+
+
+            <div
+                id="personnelLoading"
+                class="loading-text"
+            >
+                Dosya işleniyor...
+            </div>
+
+        </section>
+
+
+        <!-- =====================================
+             HEDEFLER
+             ===================================== -->
+
+        <section class="import-card">
+
+            <h2>
+                🎯 Hedef Aktarımı
+            </h2>
+
+            <div class="import-card-description">
+
+                Seçilen yıl ve haftaya ait mağaza
+                hedeflerini Excel üzerinden aktarın.
+
+            </div>
+
+
+            <label
+                class="file-area"
+                for="targetsFile"
+            >
+
+                <div class="file-icon">
+                    📄
+                </div>
+
+                <strong>
+                    Excel dosyası seç
+                </strong>
+
+                <span>
+                    Mağaza Kodu + Hedef
+                </span>
+
+            </label>
+
+
+            <input
+                type="file"
+                id="targetsFile"
+                class="file-input"
+                accept=".xlsx,.xls"
+            >
+
+
+            <div
+                id="targetsSelected"
+                class="selected-file"
+            >
+            </div>
+
+
+            <button
+                type="button"
+                id="targetsButton"
+                class="upload-button"
+            >
+                Hedefleri Aktar
+            </button>
+
+
+            <div
+                id="targetsResult"
+                class="result-box"
+            >
+            </div>
+
+
+            <div
+                id="targetsLoading"
+                class="loading-text"
+            >
+                Dosya işleniyor...
+            </div>
+
+        </section>
+
+
+        <!-- =====================================
+             NORMAL SATIŞ
+             ===================================== -->
+
+        <section class="import-card">
+
+            <h2>
+                💰 Normal Satış Aktarımı
+            </h2>
+
+            <div class="import-card-description">
+
+                Normal satış verilerini Excel üzerinden
+                sisteme aktarın.
+
+                <br><br>
+
+                Beklenen sütunlar:
+
+                <br>
+
+                Mağaza Kodu,
+                Mağaza Adı,
+                Personel Kodu,
+                Personel Adı,
+                Toplam Satış
+
+            </div>
+
+
+            <label
+                class="file-area"
+                for="salesFile"
+            >
+
+                <div class="file-icon">
+                    📊
+                </div>
+
+                <strong>
+                    Excel dosyası seç
+                </strong>
+
+                <span>
+                    XLS veya XLSX
+                </span>
+
+            </label>
+
+
+            <input
+                type="file"
+                id="salesFile"
+                class="file-input"
+                accept=".xlsx,.xls"
+            >
+
+
+            <div
+                id="salesSelected"
+                class="selected-file"
+            >
+            </div>
+
+
+            <button
+                type="button"
+                id="salesButton"
+                class="upload-button"
+            >
+                Satışları Aktar
+            </button>
+
+
+            <div
+                id="salesResult"
+                class="result-box"
+            >
+            </div>
+
+
+            <div
+                id="salesLoading"
+                class="loading-text"
+            >
+                Dosya işleniyor...
+            </div>
+
+        </section>
+
+
+    </div>
+
+
+    <!-- =========================================
+         BİLGİ
+         ========================================= -->
+
+    <section class="info-box">
+
+        <h3>
+            📌 Excel Formatı
+        </h3>
+
+        <ul>
+
+            <li>
+                Mağaza aktarımında:
+                <strong>
+                    Mağaza Kodu, Mağaza Adı
+                </strong>
+            </li>
+
+            <li>
+                Personel aktarımında:
+                <strong>
+                    Mağaza Kodu, Mağaza Adı,
+                    Personel Kodu, Personel Adı
+                </strong>
+            </li>
+
+            <li>
+                Hedef aktarımında:
+                <strong>
+                    Mağaza Kodu, Hedef
+                </strong>
+            </li>
+
+            <li>
+                Normal satış aktarımında:
+                <strong>
+                    Mağaza Kodu, Mağaza Adı,
+                    Personel Kodu, Personel Adı,
+                    Toplam Satış
+                </strong>
+            </li>
+
+            <li>
+                Kurumsal ve InStore satışlar
+                normal satış Excel'ine dahil edilmeyecek.
+            </li>
+
+            <li>
+                Kurumsal ve InStore tutarları
+                daha sonra manuel olarak sisteme girilecek.
+            </li>
+
+        </ul>
+
+    </section>
+
+
+</div>
+
+
+<script>
+
+    // =====================================================
+    // HAFTA LİSTESİ
+    // =====================================================
+
+    const weekSelect =
+        document.getElementById(
+            "week"
+        );
+
+
+    for (
+        let week = 1;
+        week <= 53;
+        week++
+    ) {
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+        option.value = week;
+
+        option.textContent =
+            week + ". Hafta";
+
+        weekSelect.appendChild(
+            option
+        );
+
+    }
+
+
+    // =====================================================
+    // DOSYA SEÇİMİ
+    // =====================================================
+
+    function setupFileInput(
+        inputId,
+        selectedId
+    ) {
+
+        const input =
+            document.getElementById(
+                inputId
+            );
+
+
+        const selected =
+            document.getElementById(
+                selectedId
+            );
+
+
+        input.addEventListener(
+            "change",
+            function() {
+
+                if (
+                    !input.files ||
+                    !input.files.length
+                ) {
+
+                    selected.style.display =
+                        "none";
+
+                    selected.textContent =
+                        "";
+
+                    return;
+                }
+
+
+                const file =
+                    input.files[0];
+
+
+                selected.textContent =
+                    "Seçilen dosya: " +
+                    file.name;
+
+
+                selected.style.display =
+                    "block";
+
+            }
+        );
+
+    }
+
+
+    setupFileInput(
+        "storesFile",
+        "storesSelected"
+    );
+
+
+    setupFileInput(
+        "personnelFile",
+        "personnelSelected"
+    );
+
+
+    setupFileInput(
+        "targetsFile",
+        "targetsSelected"
+    );
+
+
+    setupFileInput(
+        "salesFile",
+        "salesSelected"
+    );
+
+
+    // =====================================================
+    // SONUÇ GÖSTER
+    // =====================================================
+
+    function showResult(
+        elementId,
+        success,
+        message
+    ) {
+
+        const element =
+            document.getElementById(
+                elementId
+            );
+
+
+        element.className =
+            "result-box " +
+            (
+                success
+                    ? "result-success"
+                    : "result-error"
+            );
+
+
+        element.innerHTML =
+            message;
+
+
+        element.style.display =
+            "block";
+
+    }
+
+
+    // =====================================================
+    // AKTARIM YARDIMCI FONKSİYONU
+    // =====================================================
+
+    async function uploadExcel(
+        fileInputId,
+        buttonId,
+        loadingId,
+        resultId,
+        endpoint,
+        needsPeriod
+    ) {
+
+        const fileInput =
+            document.getElementById(
+                fileInputId
+            );
+
+
+        const button =
+            document.getElementById(
+                buttonId
+            );
+
+
+        const loading =
+            document.getElementById(
+                loadingId
+            );
+
+
+        if (
+            !fileInput.files ||
+            !fileInput.files.length
+        ) {
+
+            showResult(
+                resultId,
+                false,
+                "Lütfen Excel dosyası seçin."
+            );
+
+            return;
+        }
+
+
+        const file =
+            fileInput.files[0];
+
+
+        const extension =
+            file.name
+                .split(".")
+                .pop()
+                .toLowerCase();
+
+
+        if (
+            extension !== "xlsx" &&
+            extension !== "xls"
+        ) {
+
+            showResult(
+                resultId,
+                false,
+                "Sadece XLS veya XLSX dosyası yükleyebilirsiniz."
+            );
+
+            return;
+        }
+
+
+        if (
+            needsPeriod &&
+            !weekSelect.value
+        ) {
+
+            showResult(
+                resultId,
+                false,
+                "Lütfen hafta seçin."
+            );
+
+            return;
+        }
+
+
+        const formData =
+            new FormData();
+
+
+        formData.append(
+            "file",
+            file
+        );
+
+
+        if (needsPeriod) {
+
+            formData.append(
+                "year",
+                document.getElementById(
+                    "year"
+                ).value
+            );
+
+
+            formData.append(
+                "week",
+                weekSelect.value
+            );
+
+        }
+
+
+        button.disabled =
+            true;
+
+
+        loading.style.display =
+            "block";
+
+
+        showResult(
+            resultId,
+            true,
+            "Dosya gönderiliyor..."
+        );
+
+
+        try {
+
+            const response =
+                await fetch(
+                    endpoint,
+                    {
+                        method: "POST",
+                        body: formData
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.message ||
+                    "Aktarım sırasında hata oluştu."
+                );
+
+            }
+
+
+            if (!data.success) {
+
+                throw new Error(
+                    data.message ||
+                    "Aktarım başarısız."
+                );
+
+            }
+
+
+            const result =
+                data.result || {};
+
+
+            let message =
+                data.message ||
+                "Aktarım tamamlandı.";
+
+
+            message +=
+                "<br><br>" +
+                "Toplam satır: " +
+                (result.total_rows || 0);
+
+
+            message +=
+                "<br>" +
+                "Başarılı: " +
+                (result.success_rows || 0);
+
+
+            message +=
+                "<br>" +
+                "Hatalı: " +
+                (result.error_rows || 0);
+
+
+            if (
+                result.errors &&
+                result.errors.length
+            ) {
+
+                message +=
+                    "<br><br>" +
+                    "İlk hata: " +
+                    escapeHtml(
+                        result.errors[0].error
+                    );
+
+            }
+
+
+            showResult(
+                resultId,
+                true,
+                message
+            );
+
+
+        }
+
+        catch (error) {
+
+            showResult(
+                resultId,
+                false,
+                escapeHtml(
+                    error.message
+                )
+            );
+
+        }
+
+        finally {
+
+            button.disabled =
+                false;
+
+            loading.style.display =
+                "none";
+
+        }
+
+    }
+
+
+    // =====================================================
+    // HTML GÜVENLİĞİ
+    // =====================================================
+
+    function escapeHtml(
+        text
+    ) {
+
+        const div =
+            document.createElement(
+                "div"
+            );
+
+
+        div.textContent =
+            text || "";
+
+
+        return div.innerHTML;
+
+    }
+
+
+    // =====================================================
+    // MAĞAZA AKTAR
+    // =====================================================
+
+    document
+        .getElementById(
+            "storesButton"
+        )
+        .addEventListener(
+            "click",
+            function() {
+
+                uploadExcel(
+                    "storesFile",
+                    "storesButton",
+                    "storesLoading",
+                    "storesResult",
+                    "/api/import/stores",
+                    false
+                );
+
+            }
+        );
+
+
+    // =====================================================
+    // PERSONEL AKTAR
+    // =====================================================
+
+    document
+        .getElementById(
+            "personnelButton"
+        )
+        .addEventListener(
+            "click",
+            function() {
+
+                uploadExcel(
+                    "personnelFile",
+                    "personnelButton",
+                    "personnelLoading",
+                    "personnelResult",
+                    "/api/import/personnel",
+                    false
+                );
+
+            }
+        );
+
+
+    // =====================================================
+    // HEDEF AKTAR
+    // =====================================================
+
+    document
+        .getElementById(
+            "targetsButton"
+        )
+        .addEventListener(
+            "click",
+            function() {
+
+                uploadExcel(
+                    "targetsFile",
+                    "targetsButton",
+                    "targetsLoading",
+                    "targetsResult",
+                    "/api/import/targets",
+                    true
+                );
+
+            }
+        );
+
+
+    // =====================================================
+    // SATIŞ AKTAR
+    // =====================================================
+
+    document
+        .getElementById(
+            "salesButton"
+        )
+        .addEventListener(
+            "click",
+            function() {
+
+                uploadExcel(
+                    "salesFile",
+                    "salesButton",
+                    "salesLoading",
+                    "salesResult",
+                    "/api/import/sales",
+                    true
+                );
+
+            }
+        );
+
+</script>
+
+</body>
+
+</html>

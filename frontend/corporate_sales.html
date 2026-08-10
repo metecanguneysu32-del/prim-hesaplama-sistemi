@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Kurumsal Satış | Prim Hesaplama Sistemi
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <style>
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .page-header h1 {
+            margin: 0 0 6px;
+            font-size: 27px;
+            color: #111827;
+        }
+
+        .page-header p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .back-button {
+            text-decoration: none;
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            color: #374151;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin: 0 0 8px;
+            font-size: 19px;
+            color: #111827;
+        }
+
+        .description {
+            color: #6b7280;
+            font-size: 13px;
+            margin-bottom: 22px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            color: #374151;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            height: 42px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 14px;
+            outline: none;
+            background: white;
+        }
+
+        textarea {
+            height: 90px;
+            padding-top: 10px;
+            resize: vertical;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #2563eb;
+        }
+
+        .search-results {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 72px;
+            z-index: 20;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-shadow:
+                0 8px 20px
+                rgba(0, 0, 0, 0.08);
+            max-height: 220px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .search-result {
+            padding: 12px;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+        }
+
+        .search-result:hover {
+            background: #f9fafb;
+        }
+
+        .search-result strong {
+            display: block;
+            color: #111827;
+            font-size: 13px;
+        }
+
+        .search-result span {
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        .selected-info {
+            display: none;
+            margin-top: 8px;
+            padding: 9px 11px;
+            background: #eff6ff;
+            border-radius: 7px;
+            color: #1e40af;
+            font-size: 12px;
+        }
+
+        .amount-wrapper {
+            position: relative;
+        }
+
+        .amount-wrapper input {
+            padding-right: 45px;
+        }
+
+        .currency {
+            position: absolute;
+            right: 13px;
+            top: 12px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .save-button {
+            margin-top: 22px;
+            height: 44px;
+            padding: 0 22px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .save-button:hover {
+            background: #1d4ed8;
+        }
+
+        .save-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .message {
+            display: none;
+            margin-top: 15px;
+            padding: 13px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .records-table th,
+        .records-table td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+        }
+
+        .records-table th {
+            color: #6b7280;
+            font-weight: 600;
+            background: #f9fafb;
+        }
+
+        .records-table td {
+            color: #374151;
+        }
+
+        .empty-state {
+            padding: 25px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+        }
+
+        @media (max-width: 700px) {
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-group.full {
+                grid-column: auto;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="page">
+
+
+    <!-- =========================================
+         BAŞLIK
+         ========================================= -->
+
+    <header class="page-header">
+
+        <div>
+
+            <h1>
+                Kurumsal Satış
+            </h1>
+
+            <p>
+                Kurumsal satış tutarlarını manuel olarak sisteme ekleyin.
+            </p>
+
+        </div>
+
+        <a
+            href="/dashboard"
+            class="back-button"
+        >
+            ← Dashboard
+        </a>
+
+    </header>
+
+
+    <!-- =========================================
+         FORM
+         ========================================= -->
+
+    <section class="card">
+
+        <h2>
+            Kurumsal Satış Ekle
+        </h2>
+
+        <div class="description">
+
+            Kurumsal satış kaydı için dönem,
+            mağaza, personel ve satış tutarını girin.
+
+        </div>
+
+
+        <div class="form-grid">
+
+
+            <!-- =====================================
+                 YIL
+                 ===================================== -->
+
+            <div class="form-group">
+
+                <label for="year">
+                    Yıl
+                </label>
+
+                <select id="year">
+
+                    <option value="2026">
+                        2026
+                    </option>
+
+                    <option value="2027">
+                        2027
+                    </option>
+
+                    <option value="2028">
+                        2028
+                    </option>
+
+                    <option value="2029">
+                        2029
+                    </option>
+
+                    <option value="2030">
+                        2030
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- =====================================
+                 HAFTA
+                 ===================================== -->
+
+            <div class="form-group">
+
+                <label for="week">
+                    Hafta
+                </label>
+
+                <select id="week">
+
+                    <option value="">
+                        Hafta seçin
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- =====================================
+                 MAĞAZA
+                 ===================================== -->
+
+            <div class="form-group">
+
+                <label for="storeSearch">
+                    Mağaza
+                </label>
+
+                <input
+                    type="text"
+                    id="storeSearch"
+                    placeholder="Mağaza kodu veya adı yazın..."
+                    autocomplete="off"
+                >
+
+                <div
+                    id="storeResults"
+                    class="search-results"
+                >
+                </div>
+
+                <div
+                    id="selectedStore"
+                    class="selected-info"
+                >
+                </div>
+
+            </div>
+
+
+            <!-- =====================================
+                 PERSONEL
+                 ===================================== -->
+
+            <div class="form-group">
+
+                <label for="personnelSearch">
+                    Personel
+                </label>
+
+                <input
+                    type="text"
+                    id="personnelSearch"
+                    placeholder="Personel kodu veya adı yazın..."
+                    autocomplete="off"
+                    disabled
+                >
+
+                <div
+                    id="personnelResults"
+                    class="search-results"
+                >
+                </div>
+
+                <div
+                    id="selectedPersonnel"
+                    class="selected-info"
+                >
+                </div>
+
+            </div>
+
+
+            <!-- =====================================
+                 TUTAR
+                 ===================================== -->
+
+            <div class="form-group">
+
+                <label for="amount">
+                    Kurumsal Satış Tutarı
+                </label>
+
+                <div class="amount-wrapper">
+
+                    <input
+                        type="number"
+                        id="amount"
+                        placeholder="0,00"
+                        min="0"
+                        step="0.01"
+                    >
+
+                    <span class="currency">
+                        TL
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================
+                 AÇIKLAMA
+                 ===================================== -->
+
+            <div class="form-group">
+
+                <label for="description">
+                    Açıklama
+                </label>
+
+                <input
+                    type="text"
+                    id="description"
+                    placeholder="İsteğe bağlı açıklama"
+                >
+
+            </div>
+
+
+        </div>
+
+
+        <button
+            type="button"
+            id="saveButton"
+            class="save-button"
+        >
+            Kurumsal Satışı Kaydet
+        </button>
+
+
+        <div
+            id="message"
+            class="message"
+        >
+        </div>
+
+    </section>
+
+
+    <!-- =========================================
+         AÇIKLAMA
+         ========================================= -->
+
+    <section class="card">
+
+        <h2>
+            Kurumsal Satış Nasıl Hesaplanacak?
+        </h2>
+
+        <div class="description">
+
+            Buraya girilen tutar normal satışın
+            yerine geçmez. Ayrı olarak tutulur.
+
+        </div>
+
+        <table class="records-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Satış Türü
+                    </th>
+
+                    <th>
+                        Personel Satışı
+                    </th>
+
+                    <th>
+                        Mağaza Cirosu
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                <tr>
+
+                    <td>
+                        Normal Satış
+                    </td>
+
+                    <td>
+                        Dahil
+                    </td>
+
+                    <td>
+                        Dahil
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <td>
+                        Kurumsal Satış
+                    </td>
+
+                    <td>
+                        Dahil
+                    </td>
+
+                    <td>
+                        Dahil
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <td>
+                        InStore Satış
+                    </td>
+
+                    <td>
+                        Dahil
+                    </td>
+
+                    <td>
+                        Dahil
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </section>
+
+
+</div>
+
+
+<script>
+
+    // =====================================================
+    // HAFTA LİSTESİ
+    // =====================================================
+
+    const weekSelect =
+        document.getElementById(
+            "week"
+        );
+
+
+    for (
+        let week = 1;
+        week <= 53;
+        week++
+    ) {
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+        option.value =
+            week;
+
+        option.textContent =
+            week + ". Hafta";
+
+        weekSelect.appendChild(
+            option
+        );
+
+    }
+
+
+    // =====================================================
+    // SEÇİMLER
+    // =====================================================
+
+    let selectedStoreId =
+        null;
+
+    let selectedStoreName =
+        "";
+
+    let selectedPersonnelId =
+        null;
+
+    let selectedPersonnelName =
+        "";
+
+
+    // =====================================================
+    // HTML GÜVENLİĞİ
+    // =====================================================
+
+    function escapeHtml(
+        text
+    ) {
+
+        const div =
+            document.createElement(
+                "div"
+            );
+
+        div.textContent =
+            text || "";
+
+        return div.innerHTML;
+
+    }
+
+
+    // =====================================================
+    // MESAJ
+    // =====================================================
+
+    function showMessage(
+        success,
+        message
+    ) {
+
+        const element =
+            document.getElementById(
+                "message"
+            );
+
+
+        element.className =
+            "message " +
+            (
+                success
+                    ? "success"
+                    : "error"
+            );
+
+
+        element.innerHTML =
+            message;
+
+
+        element.style.display =
+            "block";
+
+    }
+
+
+    // =====================================================
+    // MAĞAZA ARAMA
+    // =====================================================
+
+    let storeSearchTimer =
+        null;
+
+
+    document
+        .getElementById(
+            "storeSearch"
+        )
+        .addEventListener(
+            "input",
+            function() {
+
+                clearTimeout(
+                    storeSearchTimer
+                );
+
+
+                const value =
+                    this.value.trim();
+
+
+                selectedStoreId =
+                    null;
+
+                selectedStoreName =
+                    "";
+
+
+                document
+                    .getElementById(
+                        "selectedStore"
+                    )
+                    .style.display =
+                    "none";
+
+
+                document
+                    .getElementById(
+                        "personnelSearch"
+                    )
+                    .disabled =
+                    true;
+
+
+                if (
+                    value.length < 2
+                ) {
+
+                    document
+                        .getElementById(
+                            "storeResults"
+                        )
+                        .style.display =
+                        "none";
+
+                    return;
+
+                }
+
+
+                storeSearchTimer =
+                    setTimeout(
+                        function() {
+
+                            searchStores(
+                                value
+                            );
+
+                        },
+                        300
+                    );
+
+            }
+        );
+
+
+    async function searchStores(
+        search
+    ) {
+
+        const results =
+            document.getElementById(
+                "storeResults"
+            );
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/stores/search?q=" +
+                    encodeURIComponent(
+                        search
+                    )
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Mağaza araması başarısız."
+                );
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            results.innerHTML =
+                "";
+
+
+            if (
+                !data.success ||
+                !data.stores ||
+                !data.stores.length
+            ) {
+
+                results.innerHTML =
+                    `
+                    <div class="search-result">
+                        <span>
+                            Mağaza bulunamadı.
+                        </span>
+                    </div>
+                    `;
+
+                results.style.display =
+                    "block";
+
+                return;
+
+            }
+
+
+            data.stores.forEach(
+                function(store) {
+
+                    const item =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    item.className =
+                        "search-result";
+
+
+                    item.innerHTML =
+                        `
+                        <strong>
+                            ${escapeHtml(
+                                store.store_code
+                            )}
+                            -
+                            ${escapeHtml(
+                                store.store_name
+                            )}
+                        </strong>
+
+                        <span>
+                            Mağaza
+                        </span>
+                        `;
+
+
+                    item.addEventListener(
+                        "click",
+                        function() {
+
+                            selectStore(
+                                store
+                            );
+
+                        }
+                    );
+
+
+                    results.appendChild(
+                        item
+                    );
+
+                }
+            );
+
+
+            results.style.display =
+                "block";
+
+
+        }
+        catch (error) {
+
+            results.innerHTML =
+                `
+                <div class="search-result">
+                    <span>
+                        ${escapeHtml(
+                            error.message
+                        )}
+                    </span>
+                </div>
+                `;
+
+            results.style.display =
+                "block";
+
+        }
+
+    }
+
+
+    // =====================================================
+    // MAĞAZA SEÇ
+    // =====================================================
+
+    function selectStore(
+        store
+    ) {
+
+        selectedStoreId =
+            store.id;
+
+
+        selectedStoreName =
+            store.store_name;
+
+
+        document
+            .getElementById(
+                "storeSearch"
+            )
+            .value =
+            store.store_code +
+            " - " +
+            store.store_name;
+
+
+        const selected =
+            document.getElementById(
+                "selectedStore"
+            );
+
+
+        selected.innerHTML =
+            "Seçilen mağaza: <strong>" +
+            escapeHtml(
+                store.store_name
+            ) +
+            "</strong>";
+
+
+        selected.style.display =
+            "block";
+
+
+        document
+            .getElementById(
+                "storeResults"
+            )
+            .style.display =
+            "none";
+
+
+        const personnelSearch =
+            document.getElementById(
+                "personnelSearch"
+            );
+
+
+        personnelSearch.disabled =
+            false;
+
+
+        personnelSearch.value =
+            "";
+
+
+        selectedPersonnelId =
+            null;
+
+        selectedPersonnelName =
+            "";
+
+
+        document
+            .getElementById(
+                "selectedPersonnel"
+            )
+            .style.display =
+            "none";
+
+    }
+
+
+    // =====================================================
+    // PERSONEL ARAMA
+    // =====================================================
+
+    let personnelSearchTimer =
+        null;
+
+
+    document
+        .getElementById(
+            "personnelSearch"
+        )
+        .addEventListener(
+            "input",
+            function() {
+
+                clearTimeout(
+                    personnelSearchTimer
+                );
+
+
+                const value =
+                    this.value.trim();
+
+
+                selectedPersonnelId =
+                    null;
+
+
+                selectedPersonnelName =
+                    "";
+
+
+                document
+                    .getElementById(
+                        "selectedPersonnel"
+                    )
+                    .style.display =
+                    "none";
+
+
+                if (
+                    !selectedStoreId ||
+                    value.length < 2
+                ) {
+
+                    document
+                        .getElementById(
+                            "personnelResults"
+                        )
+                        .style.display =
+                        "none";
+
+                    return;
+
+                }
+
+
+                personnelSearchTimer =
+                    setTimeout(
+                        function() {
+
+                            searchPersonnel(
+                                value
+                            );
+
+                        },
+                        300
+                    );
+
+            }
+        );
+
+
+    async function searchPersonnel(
+        search
+    ) {
+
+        const results =
+            document.getElementById(
+                "personnelResults"
+            );
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/personnel/search?store_id=" +
+                    encodeURIComponent(
+                        selectedStoreId
+                    ) +
+                    "&q=" +
+                    encodeURIComponent(
+                        search
+                    )
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Personel araması başarısız."
+                );
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            results.innerHTML =
+                "";
+
+
+            if (
+                !data.success ||
+                !data.personnel ||
+                !data.personnel.length
+            ) {
+
+                results.innerHTML =
+                    `
+                    <div class="search-result">
+                        <span>
+                            Personel bulunamadı.
+                        </span>
+                    </div>
+                    `;
+
+                results.style.display =
+                    "block";
+
+                return;
+
+            }
+
+
+            data.personnel.forEach(
+                function(person) {
+
+                    const item =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    item.className =
+                        "search-result";
+
+
+                    item.innerHTML =
+                        `
+                        <strong>
+                            ${escapeHtml(
+                                person.personnel_code
+                            )}
+                            -
+                            ${escapeHtml(
+                                person.personnel_name
+                            )}
+                        </strong>
+
+                        <span>
+                            ${escapeHtml(
+                                person.title || ""
+                            )}
+                        </span>
+                        `;
+
+
+                    item.addEventListener(
+                        "click",
+                        function() {
+
+                            selectPersonnel(
+                                person
+                            );
+
+                        }
+                    );
+
+
+                    results.appendChild(
+                        item
+                    );
+
+                }
+            );
+
+
+            results.style.display =
+                "block";
+
+
+        }
+        catch (error) {
+
+            results.innerHTML =
+                `
+                <div class="search-result">
+                    <span>
+                        ${escapeHtml(
+                            error.message
+                        )}
+                    </span>
+                </div>
+                `;
+
+            results.style.display =
+                "block";
+
+        }
+
+    }
+
+
+    // =====================================================
+    // PERSONEL SEÇ
+    // =====================================================
+
+    function selectPersonnel(
+        person
+    ) {
+
+        selectedPersonnelId =
+            person.id;
+
+
+        selectedPersonnelName =
+            person.personnel_name;
+
+
+        document
+            .getElementById(
+                "personnelSearch"
+            )
+            .value =
+            person.personnel_code +
+            " - " +
+            person.personnel_name;
+
+
+        const selected =
+            document.getElementById(
+                "selectedPersonnel"
+            );
+
+
+        selected.innerHTML =
+            "Seçilen personel: <strong>" +
+            escapeHtml(
+                person.personnel_name
+            ) +
+            "</strong>";
+
+
+        selected.style.display =
+            "block";
+
+
+        document
+            .getElementById(
+                "personnelResults"
+            )
+            .style.display =
+            "none";
+
+    }
+
+
+    // =====================================================
+    // KAYDET
+    // =====================================================
+
+    document
+        .getElementById(
+            "saveButton"
+        )
+        .addEventListener(
+            "click",
+            async function() {
+
+                const year =
+                    document.getElementById(
+                        "year"
+                    ).value;
+
+
+                const week =
+                    document.getElementById(
+                        "week"
+                    ).value;
+
+
+                const amount =
+                    document.getElementById(
+                        "amount"
+                    ).value;
+
+
+                const description =
+                    document.getElementById(
+                        "description"
+                    ).value.trim();
+
+
+                if (!week) {
+
+                    showMessage(
+                        false,
+                        "Lütfen hafta seçin."
+                    );
+
+                    return;
+
+                }
+
+
+                if (!selectedStoreId) {
+
+                    showMessage(
+                        false,
+                        "Lütfen mağaza seçin."
+                    );
+
+                    return;
+
+                }
+
+
+                if (!selectedPersonnelId) {
+
+                    showMessage(
+                        false,
+                        "Lütfen personel seçin."
+                    );
+
+                    return;
+
+                }
+
+
+                if (
+                    !amount ||
+                    Number(amount) <= 0
+                ) {
+
+                    showMessage(
+                        false,
+                        "Lütfen geçerli bir satış tutarı girin."
+                    );
+
+                    return;
+
+                }
+
+
+                const button =
+                    document.getElementById(
+                        "saveButton"
+                    );
+
+
+                button.disabled =
+                    true;
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "/api/corporate-sales",
+                            {
+                                method: "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                                body:
+                                    JSON.stringify({
+
+                                        year:
+                                            Number(
+                                                year
+                                            ),
+
+                                        week:
+                                            Number(
+                                                week
+                                            ),
+
+                                        store_id:
+                                            selectedStoreId,
+
+                                        personnel_id:
+                                            selectedPersonnelId,
+
+                                        amount:
+                                            Number(
+                                                amount
+                                            ),
+
+                                        description:
+                                            description
+
+                                    })
+
+                            }
+                        );
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            data.message ||
+                            "Kayıt sırasında hata oluştu."
+                        );
+
+                    }
+
+
+                    if (!data.success) {
+
+                        throw new Error(
+                            data.message ||
+                            "Kayıt başarısız."
+                        );
+
+                    }
+
+
+                    showMessage(
+                        true,
+                        "Kurumsal satış başarıyla kaydedildi."
+                    );
+
+
+                    document
+                        .getElementById(
+                            "amount"
+                        )
+                        .value =
+                        "";
+
+
+                    document
+                        .getElementById(
+                            "description"
+                        )
+                        .value =
+                        "";
+
+
+                }
+                catch (error) {
+
+                    showMessage(
+                        false,
+                        escapeHtml(
+                            error.message
+                        )
+                    );
+
+                }
+                finally {
+
+                    button.disabled =
+                        false;
+
+                }
+
+            }
+        );
+
+
+    // =====================================================
+    // DIŞARI TIKLAYINCA ARAMA LİSTELERİNİ KAPAT
+    // =====================================================
+
+    document.addEventListener(
+        "click",
+        function(event) {
+
+            if (
+                !event.target.closest(
+                    "#storeSearch"
+                ) &&
+                !event.target.closest(
+                    "#storeResults"
+                )
+            ) {
+
+                document
+                    .getElementById(
+                        "storeResults"
+                    )
+                    .style.display =
+                    "none";
+
+            }
+
+
+            if (
+                !event.target.closest(
+                    "#personnelSearch"
+                ) &&
+                !event.target.closest(
+                    "#personnelResults"
+                )
+            ) {
+
+                document
+                    .getElementById(
+                        "personnelResults"
+                    )
+                    .style.display =
+                    "none";
+
+            }
+
+        }
+    );
+
+</script>
+
+</body>
+
+</html>
