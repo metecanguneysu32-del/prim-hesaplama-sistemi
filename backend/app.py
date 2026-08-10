@@ -105,6 +105,7 @@ def instore_sales_page():
 # ============================================================
 
 @app.route("/import")
+@app.route("/veri-aktarma")
 def import_page():
     return render_template("import.html")
 
@@ -244,9 +245,7 @@ def api_create_corporate_sale():
 
         return jsonify({
             "success": False,
-            "message": (
-                f"Eksik alan: {error}"
-            )
+            "message": f"Eksik alan: {error}"
         }), 400
 
     except ValueError:
@@ -323,9 +322,7 @@ def api_create_instore_sale():
 
         return jsonify({
             "success": False,
-            "message": (
-                f"Eksik alan: {error}"
-            )
+            "message": f"Eksik alan: {error}"
         }), 400
 
     except ValueError:
@@ -355,9 +352,7 @@ def health_check():
 
     return jsonify({
         "success": True,
-        "message": (
-            "Prim hesaplama sistemi çalışıyor."
-        )
+        "message": "Prim hesaplama sistemi çalışıyor."
     })
 
 
