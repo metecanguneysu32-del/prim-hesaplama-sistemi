@@ -1,14 +1,15 @@
 import os
-import sqlite3
 
 from database import (
-    get_connection
+    get_connection,
+    save_target,
+    create_sale
 )
 
 
-# =========================================================
+# ============================================================
 # GENEL AYARLAR
-# =========================================================
+# ============================================================
 
 ALLOWED_EXTENSIONS = {
     ".xlsx",
@@ -16,9 +17,9 @@ ALLOWED_EXTENSIONS = {
 }
 
 
-# =========================================================
+# ============================================================
 # DOSYA UZANTISI KONTROLÜ
-# =========================================================
+# ============================================================
 
 def allowed_file(filename):
 
@@ -32,9 +33,9 @@ def allowed_file(filename):
     return extension in ALLOWED_EXTENSIONS
 
 
-# =========================================================
+# ============================================================
 # EXCEL KÜTÜPHANESİ KONTROLÜ
-# =========================================================
+# ============================================================
 
 def get_openpyxl():
 
@@ -51,13 +52,11 @@ def get_openpyxl():
         )
 
 
-# =========================================================
+# ============================================================
 # EXCEL DOSYASINI OKU
-# =========================================================
+# ============================================================
 
-def read_excel_file(
-    file_path
-):
+def read_excel_file(file_path):
 
     if not os.path.exists(
         file_path
@@ -66,7 +65,6 @@ def read_excel_file(
         raise FileNotFoundError(
             "Excel dosyası bulunamadı."
         )
-
 
     if not allowed_file(
         file_path
@@ -77,18 +75,14 @@ def read_excel_file(
             "kabul edilmektedir."
         )
 
-
     openpyxl = get_openpyxl()
-
 
     workbook = openpyxl.load_workbook(
         file_path,
         data_only=True
     )
 
-
     worksheet = workbook.active
-
 
     rows = list(
         worksheet.iter_rows(
@@ -96,16 +90,13 @@ def read_excel_file(
         )
     )
 
-
     workbook.close()
-
 
     if not rows:
 
         raise ValueError(
             "Excel dosyası boş."
         )
-
 
     headers = []
 
@@ -121,9 +112,7 @@ def read_excel_file(
                 str(value).strip()
             )
 
-
     data_rows = rows[1:]
-
 
     return (
         headers,
@@ -131,23 +120,18 @@ def read_excel_file(
     )
 
 
-# =========================================================
+# ============================================================
 # BAŞLIKLARI NORMALLEŞTİR
-# =========================================================
+# ============================================================
 
-def normalize_header(
-    header
-):
+def normalize_header(header):
 
     if header is None:
-
         return ""
-
 
     value = str(
         header
     ).strip().lower()
-
 
     replacements = {
 
@@ -166,14 +150,12 @@ def normalize_header(
 
     }
 
-
     for old, new in replacements.items():
 
         value = value.replace(
             old,
             new
         )
-
 
     value = value.replace(
         " ",
@@ -190,13 +172,12 @@ def normalize_header(
         ""
     )
 
-
     return value
 
 
-# =========================================================
+# ============================================================
 # BAŞLIK BUL
-# =========================================================
+# ============================================================
 
 def find_column(
     headers,
@@ -213,7 +194,6 @@ def find_column(
 
     ]
 
-
     normalized_names = [
 
         normalize_header(
@@ -224,7 +204,6 @@ def find_column(
 
     ]
 
-
     for index, header in enumerate(
         normalized_headers
     ):
@@ -233,40 +212,33 @@ def find_column(
 
             return index
 
-
     return None
 
 
-# =========================================================
+# ============================================================
 # DEĞERİ METNE ÇEVİR
-# =========================================================
+# ============================================================
 
-def clean_text(
-    value
-):
+def clean_text(value):
 
     if value is None:
 
         return ""
-
 
     return str(
         value
     ).strip()
 
 
-# =========================================================
+# ============================================================
 # SAYIYA ÇEVİR
-# =========================================================
+# ============================================================
 
-def clean_number(
-    value
-):
+def clean_number(value):
 
     if value is None:
 
         return 0.0
-
 
     if isinstance(
         value,
@@ -277,16 +249,13 @@ def clean_number(
             value
         )
 
-
     text = str(
         value
     ).strip()
 
-
     if not text:
 
         return 0.0
-
 
     text = text.replace(
         "₺",
@@ -308,8 +277,7 @@ def clean_number(
         ""
     )
 
-
-    # Türkçe Excel sayı formatı:
+    # Türkçe sayı formatı:
     #
     # 12.500,50
     #
@@ -327,7 +295,6 @@ def clean_number(
             "."
         )
 
-
     try:
 
         return float(
@@ -341,9 +308,9 @@ def clean_number(
         )
 
 
-# =========================================================
+# ============================================================
 # MAĞAZA BUL / OLUŞTUR
-# =========================================================
+# ============================================================
 
 def get_or_create_store(
     connection,
@@ -352,7 +319,6 @@ def get_or_create_store(
 ):
 
     cursor = connection.cursor()
-
 
     cursor.execute(
         """
@@ -365,9 +331,7 @@ def get_or_create_store(
         )
     )
 
-
     row = cursor.fetchone()
-
 
     if row:
 
@@ -385,9 +349,7 @@ def get_or_create_store(
             )
         )
 
-
         return row["id"]
-
 
     cursor.execute(
         """
@@ -405,13 +367,12 @@ def get_or_create_store(
         )
     )
 
-
     return cursor.lastrowid
 
 
-# =========================================================
+# ============================================================
 # PERSONEL BUL / OLUŞTUR
-# =========================================================
+# ============================================================
 
 def get_or_create_personnel(
     connection,
@@ -422,7 +383,6 @@ def get_or_create_personnel(
 ):
 
     cursor = connection.cursor()
-
 
     cursor.execute(
         """
@@ -435,9 +395,7 @@ def get_or_create_personnel(
         )
     )
 
-
     row = cursor.fetchone()
-
 
     if row:
 
@@ -460,9 +418,7 @@ def get_or_create_personnel(
             )
         )
 
-
         return row["id"]
-
 
     cursor.execute(
         """
@@ -484,13 +440,12 @@ def get_or_create_personnel(
         )
     )
 
-
     return cursor.lastrowid
 
 
-# =========================================================
+# ============================================================
 # DÖNEM BUL / OLUŞTUR
-# =========================================================
+# ============================================================
 
 def get_or_create_period(
     connection,
@@ -499,7 +454,6 @@ def get_or_create_period(
 ):
 
     cursor = connection.cursor()
-
 
     cursor.execute(
         """
@@ -516,19 +470,15 @@ def get_or_create_period(
         )
     )
 
-
     row = cursor.fetchone()
-
 
     if row:
 
         return row["id"]
 
-
     name = (
         f"{year} - {week}. Hafta"
     )
-
 
     cursor.execute(
         """
@@ -548,13 +498,17 @@ def get_or_create_period(
         )
     )
 
-
     return cursor.lastrowid
 
 
-# =========================================================
+# ============================================================
 # MAĞAZA EXCEL AKTARIMI
-# =========================================================
+#
+# Beklenen sütunlar:
+#
+# Mağaza Kodu
+# Mağaza Adı
+# ============================================================
 
 def import_stores(
     file_path
@@ -563,7 +517,6 @@ def import_stores(
     headers, rows = read_excel_file(
         file_path
     )
-
 
     store_code_index = find_column(
         headers,
@@ -577,7 +530,6 @@ def import_stores(
         ]
     )
 
-
     store_name_index = find_column(
         headers,
         [
@@ -590,14 +542,12 @@ def import_stores(
         ]
     )
 
-
     if store_code_index is None:
 
         raise ValueError(
             "Excel dosyasında "
             "'Mağaza Kodu' sütunu bulunamadı."
         )
-
 
     if store_name_index is None:
 
@@ -606,16 +556,11 @@ def import_stores(
             "'Mağaza Adı' sütunu bulunamadı."
         )
 
-
     connection = get_connection()
 
-
     success_rows = 0
-
     error_rows = 0
-
     errors = []
-
 
     try:
 
@@ -630,11 +575,9 @@ def import_stores(
                     row[store_code_index]
                 )
 
-
                 store_name = clean_text(
                     row[store_name_index]
                 )
-
 
                 if not store_code:
 
@@ -642,13 +585,11 @@ def import_stores(
                         "Mağaza kodu boş."
                     )
 
-
                 if not store_name:
 
                     raise ValueError(
                         "Mağaza adı boş."
                     )
-
 
                 get_or_create_store(
                     connection,
@@ -656,25 +597,18 @@ def import_stores(
                     store_name
                 )
 
-
                 success_rows += 1
-
 
             except Exception as error:
 
                 error_rows += 1
 
                 errors.append({
-
                     "row": row_number,
-
                     "error": str(error)
-
                 })
 
-
         connection.commit()
-
 
     except Exception:
 
@@ -682,11 +616,9 @@ def import_stores(
 
         raise
 
-
     finally:
 
         connection.close()
-
 
     return {
 
@@ -701,9 +633,18 @@ def import_stores(
     }
 
 
-# =========================================================
+# ============================================================
 # PERSONEL EXCEL AKTARIMI
-# =========================================================
+#
+# Beklenen sütunlar:
+#
+# Mağaza Kodu
+# Mağaza Adı
+# Personel Kodu
+# Personel Adı
+#
+# Unvan varsa ayrıca alınabilir.
+# ============================================================
 
 def import_personnel(
     file_path
@@ -712,7 +653,6 @@ def import_personnel(
     headers, rows = read_excel_file(
         file_path
     )
-
 
     store_code_index = find_column(
         headers,
@@ -724,7 +664,6 @@ def import_personnel(
         ]
     )
 
-
     store_name_index = find_column(
         headers,
         [
@@ -734,7 +673,6 @@ def import_personnel(
             "StoreName"
         ]
     )
-
 
     personnel_code_index = find_column(
         headers,
@@ -748,7 +686,6 @@ def import_personnel(
         ]
     )
 
-
     personnel_name_index = find_column(
         headers,
         [
@@ -759,7 +696,6 @@ def import_personnel(
             "PersonnelName"
         ]
     )
-
 
     title_index = find_column(
         headers,
@@ -772,13 +708,11 @@ def import_personnel(
         ]
     )
 
-
     if store_code_index is None:
 
         raise ValueError(
             "'Mağaza Kodu' sütunu bulunamadı."
         )
-
 
     if store_name_index is None:
 
@@ -786,13 +720,11 @@ def import_personnel(
             "'Mağaza Adı' sütunu bulunamadı."
         )
 
-
     if personnel_code_index is None:
 
         raise ValueError(
             "'Personel Kodu' sütunu bulunamadı."
         )
-
 
     if personnel_name_index is None:
 
@@ -800,16 +732,11 @@ def import_personnel(
             "'Personel Adı' sütunu bulunamadı."
         )
 
-
     connection = get_connection()
 
-
     success_rows = 0
-
     error_rows = 0
-
     errors = []
-
 
     try:
 
@@ -824,24 +751,19 @@ def import_personnel(
                     row[store_code_index]
                 )
 
-
                 store_name = clean_text(
                     row[store_name_index]
                 )
-
 
                 personnel_code = clean_text(
                     row[personnel_code_index]
                 )
 
-
                 personnel_name = clean_text(
                     row[personnel_name_index]
                 )
 
-
                 title = None
-
 
                 if title_index is not None:
 
@@ -849,13 +771,11 @@ def import_personnel(
                         row[title_index]
                     )
 
-
                 if not store_code:
 
                     raise ValueError(
                         "Mağaza kodu boş."
                     )
-
 
                 if not store_name:
 
@@ -863,13 +783,11 @@ def import_personnel(
                         "Mağaza adı boş."
                     )
 
-
                 if not personnel_code:
 
                     raise ValueError(
                         "Personel kodu boş."
                     )
-
 
                 if not personnel_name:
 
@@ -877,13 +795,11 @@ def import_personnel(
                         "Personel adı boş."
                     )
 
-
                 store_id = get_or_create_store(
                     connection,
                     store_code,
                     store_name
                 )
-
 
                 get_or_create_personnel(
                     connection,
@@ -893,25 +809,18 @@ def import_personnel(
                     title
                 )
 
-
                 success_rows += 1
-
 
             except Exception as error:
 
                 error_rows += 1
 
                 errors.append({
-
                     "row": row_number,
-
                     "error": str(error)
-
                 })
 
-
         connection.commit()
-
 
     except Exception:
 
@@ -919,11 +828,9 @@ def import_personnel(
 
         raise
 
-
     finally:
 
         connection.close()
-
 
     return {
 
@@ -938,9 +845,16 @@ def import_personnel(
     }
 
 
-# =========================================================
+# ============================================================
 # HEDEF EXCEL AKTARIMI
-# =========================================================
+#
+# Beklenen sütunlar:
+#
+# Mağaza Kodu
+# Hedef
+#
+# Yıl ve hafta dışarıdan gönderilir.
+# ============================================================
 
 def import_targets(
     file_path,
@@ -952,7 +866,6 @@ def import_targets(
         file_path
     )
 
-
     store_code_index = find_column(
         headers,
         [
@@ -962,7 +875,6 @@ def import_targets(
             "StoreCode"
         ]
     )
-
 
     target_index = find_column(
         headers,
@@ -975,13 +887,11 @@ def import_targets(
         ]
     )
 
-
     if store_code_index is None:
 
         raise ValueError(
             "'Mağaza Kodu' sütunu bulunamadı."
         )
-
 
     if target_index is None:
 
@@ -989,25 +899,13 @@ def import_targets(
             "'Hedef' sütunu bulunamadı."
         )
 
-
     connection = get_connection()
 
-
     success_rows = 0
-
     error_rows = 0
-
     errors = []
 
-
     try:
-
-        period_id = get_or_create_period(
-            connection,
-            year,
-            week
-        )
-
 
         for row_number, row in enumerate(
             rows,
@@ -1020,11 +918,9 @@ def import_targets(
                     row[store_code_index]
                 )
 
-
                 target_amount = clean_number(
                     row[target_index]
                 )
-
 
                 if not store_code:
 
@@ -1032,16 +928,13 @@ def import_targets(
                         "Mağaza kodu boş."
                     )
 
-
                 if target_amount < 0:
 
                     raise ValueError(
                         "Hedef negatif olamaz."
                     )
 
-
                 cursor = connection.cursor()
-
 
                 cursor.execute(
                     """
@@ -1054,9 +947,7 @@ def import_targets(
                     )
                 )
 
-
                 store = cursor.fetchone()
-
 
                 if not store:
 
@@ -1065,57 +956,29 @@ def import_targets(
                         f"{store_code}"
                     )
 
-
                 store_id = store["id"]
 
-
-                cursor.execute(
-                    """
-                    INSERT INTO store_targets
-                    (
-                        store_id,
-                        period_id,
-                        target_amount
-                    )
-
-                    VALUES (?, ?, ?)
-
-                    ON CONFLICT(
-                        store_id,
-                        period_id
-                    )
-
-                    DO UPDATE SET
-
-                        target_amount =
-                            excluded.target_amount
-                    """,
-                    (
-                        store_id,
-                        period_id,
-                        target_amount
-                    )
+                # database.py içindeki
+                # gerçek save_target fonksiyonunu kullan.
+                save_target(
+                    store_id,
+                    year,
+                    week,
+                    target_amount
                 )
 
-
                 success_rows += 1
-
 
             except Exception as error:
 
                 error_rows += 1
 
                 errors.append({
-
                     "row": row_number,
-
                     "error": str(error)
-
                 })
 
-
         connection.commit()
-
 
     except Exception:
 
@@ -1123,11 +986,9 @@ def import_targets(
 
         raise
 
-
     finally:
 
         connection.close()
-
 
     return {
 
@@ -1142,11 +1003,10 @@ def import_targets(
     }
 
 
-# =========================================================
-# SATIŞ EXCEL AKTARIMI
-# =========================================================
+# ============================================================
+# PERSONEL BİREYSEL NORMAL SATIŞ EXCEL AKTARIMI
 #
-# Beklenen temel Excel:
+# Beklenen sütunlar:
 #
 # Mağaza Kodu
 # Mağaza Adı
@@ -1154,11 +1014,13 @@ def import_targets(
 # Personel Adı
 # Toplam Satış
 #
-# Bir personel bir mağazada çalışır.
-# Normal satış burada tek satır olarak tutulur.
-# Kurumsal ve InStore daha sonra ayrı ekranlardan
-# sisteme eklenecektir.
-# =========================================================
+# ÇOK ÖNEMLİ:
+#
+# Bu bölüm sadece NORMAL / BİREYSEL satışı aktarır.
+#
+# Kurumsal satış buraya girmez.
+# InStore satış buraya girmez.
+# ============================================================
 
 def import_sales(
     file_path,
@@ -1170,7 +1032,6 @@ def import_sales(
         file_path
     )
 
-
     store_code_index = find_column(
         headers,
         [
@@ -1181,7 +1042,6 @@ def import_sales(
         ]
     )
 
-
     store_name_index = find_column(
         headers,
         [
@@ -1191,7 +1051,6 @@ def import_sales(
             "StoreName"
         ]
     )
-
 
     personnel_code_index = find_column(
         headers,
@@ -1204,7 +1063,6 @@ def import_sales(
         ]
     )
 
-
     personnel_name_index = find_column(
         headers,
         [
@@ -1215,7 +1073,6 @@ def import_sales(
             "PersonnelName"
         ]
     )
-
 
     sales_index = find_column(
         headers,
@@ -1231,13 +1088,11 @@ def import_sales(
         ]
     )
 
-
     if store_code_index is None:
 
         raise ValueError(
             "'Mağaza Kodu' sütunu bulunamadı."
         )
-
 
     if store_name_index is None:
 
@@ -1245,13 +1100,11 @@ def import_sales(
             "'Mağaza Adı' sütunu bulunamadı."
         )
 
-
     if personnel_code_index is None:
 
         raise ValueError(
             "'Personel Kodu' sütunu bulunamadı."
         )
-
 
     if personnel_name_index is None:
 
@@ -1259,32 +1112,19 @@ def import_sales(
             "'Personel Adı' sütunu bulunamadı."
         )
 
-
     if sales_index is None:
 
         raise ValueError(
             "'Toplam Satış' sütunu bulunamadı."
         )
 
-
     connection = get_connection()
 
-
     success_rows = 0
-
     error_rows = 0
-
     errors = []
 
-
     try:
-
-        period_id = get_or_create_period(
-            connection,
-            year,
-            week
-        )
-
 
         for row_number, row in enumerate(
             rows,
@@ -1297,26 +1137,21 @@ def import_sales(
                     row[store_code_index]
                 )
 
-
                 store_name = clean_text(
                     row[store_name_index]
                 )
-
 
                 personnel_code = clean_text(
                     row[personnel_code_index]
                 )
 
-
                 personnel_name = clean_text(
                     row[personnel_name_index]
                 )
 
-
                 sales_amount = clean_number(
                     row[sales_index]
                 )
-
 
                 if not store_code:
 
@@ -1324,13 +1159,11 @@ def import_sales(
                         "Mağaza kodu boş."
                     )
 
-
                 if not store_name:
 
                     raise ValueError(
                         "Mağaza adı boş."
                     )
-
 
                 if not personnel_code:
 
@@ -1338,13 +1171,11 @@ def import_sales(
                         "Personel kodu boş."
                     )
 
-
                 if not personnel_name:
 
                     raise ValueError(
                         "Personel adı boş."
                     )
-
 
                 if sales_amount < 0:
 
@@ -1352,13 +1183,11 @@ def import_sales(
                         "Satış tutarı negatif olamaz."
                     )
 
-
                 store_id = get_or_create_store(
                     connection,
                     store_code,
                     store_name
                 )
-
 
                 personnel_id = (
                     get_or_create_personnel(
@@ -1369,62 +1198,44 @@ def import_sales(
                     )
                 )
 
+                # ==================================================
+                # BİREYSEL NORMAL SATIŞ
+                # ==================================================
+                #
+                # database.py içindeki gerçek
+                # create_sale fonksiyonunu kullanıyoruz.
+                #
+                # create_sale(
+                #     store_id,
+                #     personnel_id,
+                #     year,
+                #     week,
+                #     amount
+                # )
+                #
+                # Kurumsal ve InStore burada YOKTUR.
+                # ==================================================
 
-                cursor = connection.cursor()
-
-
-                cursor.execute(
-                    """
-                    INSERT INTO personnel_sales
-                    (
-                        personnel_id,
-                        store_id,
-                        period_id,
-                        sales_amount
-                    )
-
-                    VALUES (?, ?, ?, ?)
-
-                    ON CONFLICT(
-                        personnel_id,
-                        period_id
-                    )
-
-                    DO UPDATE SET
-
-                        store_id =
-                            excluded.store_id,
-
-                        sales_amount =
-                            excluded.sales_amount
-                    """,
-                    (
-                        personnel_id,
-                        store_id,
-                        period_id,
-                        sales_amount
-                    )
+                create_sale(
+                    store_id,
+                    personnel_id,
+                    year,
+                    week,
+                    sales_amount
                 )
 
-
                 success_rows += 1
-
 
             except Exception as error:
 
                 error_rows += 1
 
                 errors.append({
-
                     "row": row_number,
-
                     "error": str(error)
-
                 })
 
-
         connection.commit()
-
 
     except Exception:
 
@@ -1432,11 +1243,9 @@ def import_sales(
 
         raise
 
-
     finally:
 
         connection.close()
-
 
     return {
 
@@ -1451,9 +1260,9 @@ def import_sales(
     }
 
 
-# =========================================================
+# ============================================================
 # IMPORT LOG KAYDI
-# =========================================================
+# ============================================================
 
 def save_import_log(
     file_type,
@@ -1465,11 +1274,9 @@ def save_import_log(
 
     connection = get_connection()
 
-
     try:
 
         cursor = connection.cursor()
-
 
         cursor.execute(
             """
@@ -1493,18 +1300,16 @@ def save_import_log(
             )
         )
 
-
         connection.commit()
-
 
     finally:
 
         connection.close()
 
 
-# =========================================================
+# ============================================================
 # HATA EXCELİ OLUŞTUR
-# =========================================================
+# ============================================================
 
 def create_error_excel(
     errors,
@@ -1513,13 +1318,11 @@ def create_error_excel(
 
     openpyxl = get_openpyxl()
 
-
     workbook = openpyxl.Workbook()
 
     worksheet = workbook.active
 
     worksheet.title = "Hatalar"
-
 
     worksheet.append(
         [
@@ -1527,7 +1330,6 @@ def create_error_excel(
             "Hata"
         ]
     )
-
 
     for error in errors:
 
@@ -1545,23 +1347,18 @@ def create_error_excel(
             ]
         )
 
-
     worksheet.column_dimensions[
         "A"
     ].width = 15
-
 
     worksheet.column_dimensions[
         "B"
     ].width = 70
 
-
     workbook.save(
         output_path
     )
 
-
     workbook.close()
-
 
     return output_path
