@@ -3,9 +3,7 @@ from pathlib import Path
 import sys
 import csv
 import io
-import os
-
-from openpyxl import load_workbook
+import pandas as pd
 
 
 # ============================================================
@@ -56,11 +54,11 @@ init_database()
 # ============================================================
 
 def clean_value(value):
-    """
-    Excel veya form verisini temizler.
-    """
 
     if value is None:
+        return ""
+
+    if pd.isna(value):
         return ""
 
     return str(value).strip()
@@ -71,17 +69,16 @@ def normalize_number(value):
     Excel'den gelen satış/hedef tutarlarını sayıya çevirir.
 
     Örnek:
-        125000
-        125.000
-        125.000,50
-        125000,50
-        125,000.50
+    125000
+    125.000
+    125.000,50
+    125000,50
+    125.000,50 TL
     """
 
     if value is None:
         return 0.0
 
-    # Sayısal değer zaten sayıysa
     if isinstance(value, (int, float)):
         return float(value)
 
@@ -95,24 +92,21 @@ def normalize_number(value):
     value = value.replace("tl", "")
     value = value.replace(" ", "")
 
-    # Hem nokta hem virgül varsa
     if "," in value and "." in value:
 
-        # 125.000,50
         if value.rfind(",") > value.rfind("."):
+
             value = value.replace(".", "")
             value = value.replace(",", ".")
 
-        # 125,000.50
         else:
+
             value = value.replace(",", "")
 
-    # Sadece virgül varsa
     elif "," in value:
 
         value = value.replace(",", ".")
 
-    # Birden fazla nokta varsa
     elif value.count(".") > 1:
 
         value = value.replace(".", "")
@@ -128,73 +122,17 @@ def normalize_number(value):
         )
 
 
-def normalize_header(value):
-    """
-    Excel sütun başlıklarını karşılaştırılabilir hale getirir.
-    """
-
-    if value is None:
-        return ""
-
-    text = str(value).strip().lower()
-
-    replacements = {
-        "ı": "i",
-        "ğ": "g",
-        "ü": "u",
-        "ş": "s",
-        "ö": "o",
-        "ç": "c"
-    }
-
-    for old, new in replacements.items():
-        text = text.replace(old, new)
-
-    text = text.replace("_", " ")
-    text = text.replace("-", " ")
-
-    return " ".join(text.split())
-
-
-def get_row_value(row, *names):
-    """
-    Excel satırından sütun değerini güvenli şekilde getirir.
-
-    Türkçe karakter ve büyük/küçük harf farklarını tolere eder.
-    """
-
-    normalized_row = {}
-
-    for key, value in row.items():
-
-        normalized_key = normalize_header(key)
-
-        normalized_row[normalized_key] = value
-
-    for name in names:
-
-        normalized_name = normalize_header(name)
-
-        if normalized_name in normalized_row:
-
-            return normalized_row[normalized_name]
-
-    return None
-
+# ============================================================
+# EXCEL / CSV OKUMA
+# ============================================================
 
 def read_uploaded_file(file):
+
     """
-    XLSX veya CSV dosyasını okur.
+    XLSX / XLS / CSV dosyasını okur.
 
-    XLSX:
-        openpyxl kullanılır.
-
-    CSV:
-        utf-8-sig veya cp1254 kullanılır.
-
-    Not:
-        Eski .xls formatı openpyxl tarafından desteklenmez.
-        Sistem .xlsx kullanmalıdır.
+    Excel dosyalarında decode() kullanılmaz.
+    Pandas + openpyxl kullanılır.
     """
 
     if file is None:
@@ -202,113 +140,66 @@ def read_uploaded_file(file):
             "Dosya gönderilmedi."
         )
 
-    filename = clean_value(
-        getattr(file, "filename", "")
-    )
+    filename = file.filename or ""
 
     if not filename:
         raise ValueError(
             "Dosya adı bulunamadı."
         )
 
-    extension = Path(
-        filename
-    ).suffix.lower()
+    extension = Path(filename).suffix.lower()
 
-    # ========================================================
+    # --------------------------------------------------------
     # XLSX
-    # ========================================================
+    # --------------------------------------------------------
 
     if extension == ".xlsx":
 
         try:
 
-            workbook = load_workbook(
+            dataframe = pd.read_excel(
                 file,
-                read_only=True,
-                data_only=True
+                engine="openpyxl"
             )
 
         except Exception as error:
 
             raise ValueError(
-                f"Excel dosyası okunamadı: {error}"
+                f"Excel XLSX dosyası okunamadı: {error}"
             )
 
-        worksheet = workbook.active
+    # --------------------------------------------------------
+    # XLS
+    # --------------------------------------------------------
 
-        rows = worksheet.iter_rows(
-            values_only=True
-        )
+    elif extension == ".xls":
 
         try:
 
-            headers = next(rows)
-
-        except StopIteration:
-
-            workbook.close()
-
-            raise ValueError(
-                "Excel dosyası boş."
+            dataframe = pd.read_excel(
+                file
             )
 
-        if not headers:
-            workbook.close()
+        except Exception as error:
 
             raise ValueError(
-                "Excel sütun başlıkları bulunamadı."
+                "XLS dosyası okunamadı. "
+                "Lütfen XLSX formatında kaydedip tekrar deneyin. "
+                f"Detay: {error}"
             )
 
-        headers = [
-            clean_value(header)
-            for header in headers
-        ]
-
-        result = []
-
-        for row in rows:
-
-            # Tamamen boş satırları atla
-            if not any(
-                value is not None
-                and clean_value(value) != ""
-                for value in row
-            ):
-                continue
-
-            data = {}
-
-            for index, header in enumerate(headers):
-
-                if not header:
-                    continue
-
-                value = (
-                    row[index]
-                    if index < len(row)
-                    else None
-                )
-
-                data[header] = value
-
-            result.append(data)
-
-        workbook.close()
-
-        return result
-
-    # ========================================================
+    # --------------------------------------------------------
     # CSV
-    # ========================================================
+    # --------------------------------------------------------
 
-    if extension == ".csv":
+    elif extension == ".csv":
 
         raw = file.read()
 
         if not raw:
+
             raise ValueError(
-                "CSV dosyası boş."
+                "Dosya boş."
             )
 
         try:
@@ -331,26 +222,34 @@ def read_uploaded_file(file):
                     "latin-1"
                 )
 
-        return list(
-            csv.DictReader(
-                io.StringIO(text)
-            )
+        dataframe = pd.read_csv(
+            io.StringIO(text)
         )
 
-    # ========================================================
-    # XLS
-    # ========================================================
-
-    if extension == ".xls":
+    else:
 
         raise ValueError(
-            "Eski .xls formatı desteklenmiyor. "
-            "Lütfen Excel dosyanızı .xlsx olarak kaydedip tekrar yükleyin."
+            "Desteklenmeyen dosya formatı. "
+            "Lütfen XLSX veya CSV dosyası yükleyin."
         )
 
-    raise ValueError(
-        "Desteklenmeyen dosya formatı. "
-        "Lütfen .xlsx veya .csv dosyası yükleyin."
+    # --------------------------------------------------------
+    # SÜTUN TEMİZLEME
+    # --------------------------------------------------------
+
+    dataframe.columns = [
+        str(column).strip()
+        for column in dataframe.columns
+    ]
+
+    # NaN değerlerini None yap
+    dataframe = dataframe.where(
+        pd.notnull(dataframe),
+        None
+    )
+
+    return dataframe.to_dict(
+        orient="records"
     )
 
 
@@ -374,7 +273,8 @@ def index():
 def dashboard():
 
     dashboard_file = (
-        FRONTEND_DIR / "dashboard.html"
+        FRONTEND_DIR /
+        "dashboard.html"
     )
 
     if dashboard_file.exists():
@@ -386,19 +286,29 @@ def dashboard():
     return """
     <!DOCTYPE html>
     <html lang="tr">
+
     <head>
+
         <meta charset="UTF-8">
-        <title>Prim Hesaplama Sistemi</title>
+
+        <title>
+            Prim Hesaplama Sistemi
+        </title>
+
     </head>
+
     <body>
 
-        <h1>Prim Hesaplama Sistemi</h1>
+        <h1>
+            Prim Hesaplama Sistemi
+        </h1>
 
         <p>
             Dashboard dosyası bulunamadı.
         </p>
 
     </body>
+
     </html>
     """
 
@@ -534,8 +444,6 @@ def api_search_personnel():
 )
 def import_stores():
 
-    connection = None
-
     try:
 
         file = request.files.get(
@@ -556,21 +464,15 @@ def import_stores():
         for row in rows:
 
             store_code = clean_value(
-                get_row_value(
-                    row,
-                    "Mağaza Kodu",
-                    "magaza_kodu",
-                    "store_code"
-                )
+                row.get("Mağaza Kodu")
+                or row.get("magaza_kodu")
+                or row.get("store_code")
             )
 
             store_name = clean_value(
-                get_row_value(
-                    row,
-                    "Mağaza Adı",
-                    "magaza_adi",
-                    "store_name"
-                )
+                row.get("Mağaza Adı")
+                or row.get("magaza_adi")
+                or row.get("store_name")
             )
 
             if not store_code:
@@ -589,9 +491,7 @@ def import_stores():
                 FROM stores
                 WHERE store_code = ?
                 """,
-                (
-                    store_code,
-                )
+                (store_code,)
             )
 
             existing = cursor.fetchone()
@@ -631,29 +531,32 @@ def import_stores():
                 created += 1
 
         connection.commit()
+        connection.close()
 
         return jsonify({
+
             "success": True,
-            "message": "Mağaza aktarımı tamamlandı.",
+
+            "message":
+                "Mağaza aktarımı tamamlandı.",
+
             "created": created,
+
             "updated": updated,
+
             "skipped": skipped
+
         })
 
     except Exception as error:
 
-        if connection:
-            connection.rollback()
-
         return jsonify({
+
             "success": False,
+
             "message": str(error)
+
         }), 400
-
-    finally:
-
-        if connection:
-            connection.close()
 
 
 # ============================================================
@@ -665,8 +568,6 @@ def import_stores():
     methods=["POST"]
 )
 def import_personnel():
-
-    connection = None
 
     try:
 
@@ -688,39 +589,21 @@ def import_personnel():
         for row in rows:
 
             store_code = clean_value(
-                get_row_value(
-                    row,
-                    "Mağaza Kodu",
-                    "magaza_kodu",
-                    "store_code"
-                )
+                row.get("Mağaza Kodu")
+                or row.get("magaza_kodu")
+                or row.get("store_code")
             )
 
             personnel_code = clean_value(
-                get_row_value(
-                    row,
-                    "Personel Kodu",
-                    "personel_kodu",
-                    "personnel_code"
-                )
+                row.get("Personel Kodu")
+                or row.get("personel_kodu")
+                or row.get("personnel_code")
             )
 
             personnel_name = clean_value(
-                get_row_value(
-                    row,
-                    "Personel Adı",
-                    "personel_adi",
-                    "personnel_name"
-                )
-            )
-
-            title = clean_value(
-                get_row_value(
-                    row,
-                    "Ünvan",
-                    "Unvan",
-                    "title"
-                )
+                row.get("Personel Adı")
+                or row.get("personel_adi")
+                or row.get("personnel_name")
             )
 
             if (
@@ -738,9 +621,7 @@ def import_personnel():
                 FROM stores
                 WHERE store_code = ?
                 """,
-                (
-                    store_code,
-                )
+                (store_code,)
             )
 
             store = cursor.fetchone()
@@ -758,9 +639,7 @@ def import_personnel():
                 FROM personnel
                 WHERE personnel_code = ?
                 """,
-                (
-                    personnel_code,
-                )
+                (personnel_code,)
             )
 
             existing = cursor.fetchone()
@@ -771,14 +650,12 @@ def import_personnel():
                     """
                     UPDATE personnel
                     SET personnel_name = ?,
-                        store_id = ?,
-                        title = ?
+                        store_id = ?
                     WHERE personnel_code = ?
                     """,
                     (
                         personnel_name,
                         store_id,
-                        title,
                         personnel_code
                     )
                 )
@@ -792,45 +669,46 @@ def import_personnel():
                     INSERT INTO personnel (
                         personnel_code,
                         personnel_name,
-                        store_id,
-                        title
+                        store_id
                     )
-                    VALUES (?, ?, ?, ?)
+                    VALUES (?, ?, ?)
                     """,
                     (
                         personnel_code,
                         personnel_name,
-                        store_id,
-                        title
+                        store_id
                     )
                 )
 
                 created += 1
 
         connection.commit()
+        connection.close()
 
         return jsonify({
+
             "success": True,
-            "message": "Personel aktarımı tamamlandı.",
+
+            "message":
+                "Personel aktarımı tamamlandı.",
+
             "created": created,
+
             "updated": updated,
+
             "skipped": skipped
+
         })
 
     except Exception as error:
 
-        if connection:
-            connection.rollback()
-
         return jsonify({
+
             "success": False,
+
             "message": str(error)
+
         }), 400
-
-    finally:
-
-        if connection:
-            connection.close()
 
 
 # ============================================================
@@ -862,8 +740,12 @@ def import_targets():
         if not year or not week:
 
             return jsonify({
+
                 "success": False,
-                "message": "Yıl ve hafta seçilmelidir."
+
+                "message":
+                    "Yıl ve hafta seçilmelidir."
+
             }), 400
 
         rows = read_uploaded_file(
@@ -876,22 +758,19 @@ def import_targets():
         for row in rows:
 
             store_code = clean_value(
-                get_row_value(
-                    row,
-                    "Mağaza Kodu",
-                    "magaza_kodu",
-                    "store_code"
-                )
+                row.get("Mağaza Kodu")
+                or row.get("magaza_kodu")
+                or row.get("store_code")
             )
 
-            target = get_row_value(
-                row,
-                "Hedef",
-                "target",
-                "hedef"
+            target = row.get(
+                "Hedef"
             )
 
-            if not store_code or target is None:
+            if (
+                not store_code
+                or target is None
+            ):
 
                 skipped += 1
                 continue
@@ -900,57 +779,57 @@ def import_targets():
                 target
             )
 
-            connection = None
+            connection = get_connection()
+            cursor = connection.cursor()
 
-            try:
+            cursor.execute(
+                """
+                SELECT id
+                FROM stores
+                WHERE store_code = ?
+                """,
+                (store_code,)
+            )
 
-                connection = get_connection()
-                cursor = connection.cursor()
+            store = cursor.fetchone()
 
-                cursor.execute(
-                    """
-                    SELECT id
-                    FROM stores
-                    WHERE store_code = ?
-                    """,
-                    (
-                        store_code,
-                    )
-                )
+            connection.close()
 
-                store = cursor.fetchone()
+            if not store:
 
-                if not store:
+                skipped += 1
+                continue
 
-                    skipped += 1
-                    continue
+            save_target(
+                store_id=store["id"],
+                year=year,
+                week=week,
+                target_amount=target_amount
+            )
 
-                save_target(
-                    store_id=store["id"],
-                    year=year,
-                    week=week,
-                    target_amount=target_amount
-                )
-
-                count += 1
-
-            finally:
-
-                if connection:
-                    connection.close()
+            count += 1
 
         return jsonify({
+
             "success": True,
-            "message": "Hedef aktarımı tamamlandı.",
+
+            "message":
+                "Hedef aktarımı tamamlandı.",
+
             "count": count,
+
             "skipped": skipped
+
         })
 
     except Exception as error:
 
         return jsonify({
+
             "success": False,
+
             "message": str(error)
+
         }), 400
 
 
@@ -963,8 +842,6 @@ def import_targets():
     methods=["POST"]
 )
 def import_sales():
-
-    connection = None
 
     try:
 
@@ -985,8 +862,12 @@ def import_sales():
         if not year or not week:
 
             return jsonify({
+
                 "success": False,
-                "message": "Yıl ve hafta seçilmelidir."
+
+                "message":
+                    "Yıl ve hafta seçilmelidir."
+
             }), 400
 
         rows = read_uploaded_file(
@@ -1002,32 +883,26 @@ def import_sales():
         for row in rows:
 
             store_code = clean_value(
-                get_row_value(
-                    row,
-                    "Mağaza Kodu",
-                    "magaza_kodu",
-                    "store_code"
-                )
+                row.get("Mağaza Kodu")
+                or row.get("magaza_kodu")
+                or row.get("store_code")
             )
 
             personnel_code = clean_value(
-                get_row_value(
-                    row,
-                    "Personel Kodu",
-                    "personel_kodu",
-                    "personnel_code"
-                )
+                row.get("Personel Kodu")
+                or row.get("personel_kodu")
+                or row.get("personnel_code")
             )
 
-            amount = get_row_value(
-                row,
-                "Toplam Satış",
-                "toplam_satis",
-                "Toplam Satis",
-                "Bireysel Satış",
-                "bireysel_satis",
-                "Bireysel Satis"
+            amount = row.get(
+                "Toplam Satış"
             )
+
+            if amount is None:
+
+                amount = row.get(
+                    "Bireysel Satış"
+                )
 
             if (
                 not store_code
@@ -1048,9 +923,7 @@ def import_sales():
                 FROM stores
                 WHERE store_code = ?
                 """,
-                (
-                    store_code,
-                )
+                (store_code,)
             )
 
             store = cursor.fetchone()
@@ -1142,31 +1015,30 @@ def import_sales():
             count += 1
 
         connection.commit()
+        connection.close()
 
         return jsonify({
+
             "success": True,
-            "message": (
-                "Personel bireysel "
-                "normal satış aktarımı tamamlandı."
-            ),
+
+            "message":
+                "Personel bireysel normal satış aktarımı tamamlandı.",
+
             "count": count,
+
             "skipped": skipped
+
         })
 
     except Exception as error:
 
-        if connection:
-            connection.rollback()
-
         return jsonify({
+
             "success": False,
+
             "message": str(error)
+
         }), 400
-
-    finally:
-
-        if connection:
-            connection.close()
 
 
 # ============================================================
@@ -1186,40 +1058,51 @@ def api_create_corporate_sale():
         ) or {}
 
         record_id = create_corporate_sale(
+
             store_id=int(
                 data["store_id"]
             ),
+
             personnel_id=int(
                 data["personnel_id"]
             ),
+
             year=int(
                 data["year"]
             ),
+
             week=int(
                 data["week"]
             ),
+
             amount=float(
                 data["amount"]
             ),
+
             description=data.get(
                 "description"
             )
         )
 
         return jsonify({
+
             "success": True,
-            "message": (
-                "Kurumsal satış "
-                "başarıyla eklendi."
-            ),
+
+            "message":
+                "Kurumsal satış başarıyla eklendi.",
+
             "id": record_id
+
         })
 
     except Exception as error:
 
         return jsonify({
+
             "success": False,
+
             "message": str(error)
+
         }), 400
 
 
@@ -1240,40 +1123,51 @@ def api_create_instore_sale():
         ) or {}
 
         record_id = create_instore_sale(
+
             store_id=int(
                 data["store_id"]
             ),
+
             personnel_id=int(
                 data["personnel_id"]
             ),
+
             year=int(
                 data["year"]
             ),
+
             week=int(
                 data["week"]
             ),
+
             amount=float(
                 data["amount"]
             ),
+
             description=data.get(
                 "description"
             )
         )
 
         return jsonify({
+
             "success": True,
-            "message": (
-                "InStore satış "
-                "başarıyla eklendi."
-            ),
+
+            "message":
+                "InStore satış başarıyla eklendi.",
+
             "id": record_id
+
         })
 
     except Exception as error:
 
         return jsonify({
+
             "success": False,
+
             "message": str(error)
+
         }), 400
 
 
@@ -1288,10 +1182,12 @@ def api_create_instore_sale():
 def health_check():
 
     return jsonify({
+
         "success": True,
-        "message": (
+
+        "message":
             "Prim hesaplama sistemi çalışıyor."
-        )
+
     })
 
 
@@ -1304,6 +1200,7 @@ def page_not_found(error):
 
     return """
     <!DOCTYPE html>
+
     <html lang="tr">
 
     <head>
@@ -1344,10 +1241,12 @@ def page_not_found(error):
 def internal_server_error(error):
 
     return jsonify({
+
         "success": False,
-        "message": (
+
+        "message":
             "Sunucu tarafında bir hata oluştu."
-        )
+
     }), 500
 
 
