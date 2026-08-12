@@ -474,10 +474,34 @@ def instore_sales_page():
 # ============================================================
 
 @app.route(
-    "/api/stores/search",
+    "/api/stores",
     methods=["GET"]
 )
-def api_search_stores():
+def api_stores():
+
+    search = request.args.get(
+        "q",
+        ""
+    ).strip()
+
+    try:
+
+        stores = search_stores(
+            search
+        )
+
+        return jsonify({
+            "success": True,
+            "stores": stores
+        })
+
+    except Exception as error:
+
+        return jsonify({
+            "success": False,
+            "message": str(error),
+            "stores": []
+        }), 500
 
     search = request.args.get(
         "q",
