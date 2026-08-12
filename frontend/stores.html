@@ -1,46 +1,776 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mağaza Yönetimi</title>
-    <link rel="stylesheet" href="style.css">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Mağazalar | Prim Hesaplama Sistemi
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/static/style.css"
+    >
+
+    <style>
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .page-header h1 {
+            margin: 0 0 7px;
+            color: #111827;
+            font-size: 28px;
+        }
+
+        .page-header p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .back-button {
+            text-decoration: none;
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #374151;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .back-button:hover {
+            background: #f9fafb;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 18px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+        }
+
+        .search-box {
+            flex: 1;
+        }
+
+        .search-box input {
+            width: 100%;
+            box-sizing: border-box;
+            height: 42px;
+            padding: 0 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: #2563eb;
+        }
+
+        .refresh-button {
+            height: 42px;
+            padding: 0 18px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .refresh-button:hover {
+            background: #1d4ed8;
+        }
+
+        .summary {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            min-width: 180px;
+            padding: 18px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+        }
+
+        .summary-label {
+            color: #6b7280;
+            font-size: 13px;
+            margin-bottom: 7px;
+        }
+
+        .summary-value {
+            color: #111827;
+            font-size: 25px;
+            font-weight: 700;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        thead {
+            background: #f9fafb;
+        }
+
+        th {
+            padding: 14px 16px;
+            text-align: left;
+            color: #374151;
+            font-size: 13px;
+            font-weight: 700;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        td {
+            padding: 14px 16px;
+            color: #4b5563;
+            font-size: 13px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .status-active {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: #dcfce7;
+            color: #166534;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-passive {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: #fee2e2;
+            color: #991b1b;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .empty-row {
+            text-align: center;
+            padding: 35px !important;
+            color: #6b7280;
+        }
+
+        .loading-row {
+            text-align: center;
+            padding: 35px !important;
+            color: #6b7280;
+        }
+
+        .error-row {
+            text-align: center;
+            padding: 35px !important;
+            color: #991b1b;
+        }
+
+        @media (max-width: 700px) {
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .summary {
+                flex-direction: column;
+            }
+
+            .summary-card {
+                width: auto;
+            }
+
+        }
+
+    </style>
+
 </head>
+
+
 <body>
 
-<h1>Mağaza Yönetimi</h1>
+    <main class="container">
 
-<div class="toolbar">
-    <button>+ Yeni Mağaza</button>
-    <input type="text" placeholder="Mağaza Ara...">
-</div>
+        <!-- =========================================
+             BAŞLIK
+             ========================================= -->
 
-<table>
-    <thead>
-        <tr>
-            <th>Mağaza Kodu</th>
-            <th>Mağaza Adı</th>
-            <th>İl</th>
-            <th>İlçe</th>
-            <th>Durum</th>
-            <th>İşlemler</th>
-        </tr>
-    </thead>
+        <header class="page-header">
 
-    <tbody>
+            <div>
 
-        <tr>
-            <td>3401</td>
-            <td>İstanbul Forum</td>
-            <td>İstanbul</td>
-            <td>Bayrampaşa</td>
-            <td>Aktif</td>
-            <td>Düzenle | Sil</td>
-        </tr>
+                <h1>
+                    Mağazalar
+                </h1>
 
-    </tbody>
+                <p>
+                    Sistemde kayıtlı mağazaları görüntüleyin.
+                </p>
 
-</table>
+            </div>
+
+            <a
+                href="/dashboard"
+                class="back-button"
+            >
+                ← Dashboard
+            </a>
+
+        </header>
+
+
+        <!-- =========================================
+             ARAMA / YENİLE
+             ========================================= -->
+
+        <section class="toolbar">
+
+            <div class="search-box">
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Mağaza kodu, mağaza adı, il, ilçe veya mahalle ara..."
+                >
+
+            </div>
+
+            <button
+                type="button"
+                id="refreshButton"
+                class="refresh-button"
+            >
+                ↻ Yenile
+            </button>
+
+        </section>
+
+
+        <!-- =========================================
+             ÖZET
+             ========================================= -->
+
+        <section class="summary">
+
+            <div class="summary-card">
+
+                <div class="summary-label">
+                    Toplam Mağaza
+                </div>
+
+                <div
+                    class="summary-value"
+                    id="totalStores"
+                >
+                    0
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================================
+             MAĞAZA TABLOSU
+             ========================================= -->
+
+        <section class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Mağaza Kodu
+                        </th>
+
+                        <th>
+                            Mağaza Adı
+                        </th>
+
+                        <th>
+                            İl
+                        </th>
+
+                        <th>
+                            İlçe
+                        </th>
+
+                        <th>
+                            Mahalle
+                        </th>
+
+                        <th>
+                            Durum
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="storesTableBody">
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            class="loading-row"
+                        >
+                            Mağazalar yükleniyor...
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </section>
+
+    </main>
+
+
+    <!-- =========================================
+         JAVASCRIPT
+         ========================================= -->
+
+    <script>
+
+        let allStores = [];
+
+
+        // =========================================
+        // MAĞAZALARI GETİR
+        // =========================================
+
+        async function loadStores() {
+
+            const tbody =
+                document.getElementById(
+                    "storesTableBody"
+                );
+
+            const totalStores =
+                document.getElementById(
+                    "totalStores"
+                );
+
+            tbody.innerHTML = `
+                <tr>
+                    <td
+                        colspan="6"
+                        class="loading-row"
+                    >
+                        Mağazalar yükleniyor...
+                    </td>
+                </tr>
+            `;
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/stores",
+                        {
+                            method: "GET"
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.message ||
+                        "Mağazalar alınamadı."
+                    );
+
+                }
+
+
+                if (!data.success) {
+
+                    throw new Error(
+                        data.message ||
+                        "Mağazalar alınamadı."
+                    );
+
+                }
+
+
+                allStores =
+                    Array.isArray(
+                        data.stores
+                    )
+                    ? data.stores
+                    : [];
+
+
+                totalStores.textContent =
+                    allStores.length;
+
+
+                renderStores(
+                    allStores
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Mağaza yükleme hatası:",
+                    error
+                );
+
+
+                totalStores.textContent =
+                    "0";
+
+
+                tbody.innerHTML = `
+                    <tr>
+                        <td
+                            colspan="6"
+                            class="error-row"
+                        >
+                            Mağazalar yüklenemedi:
+                            ${escapeHtml(error.message)}
+                        </td>
+                    </tr>
+                `;
+
+            }
+
+        }
+
+
+        // =========================================
+        // MAĞAZALARI TABLOYA YAZ
+        // =========================================
+
+        function renderStores(
+            stores
+        ) {
+
+            const tbody =
+                document.getElementById(
+                    "storesTableBody"
+                );
+
+
+            if (
+                !stores ||
+                stores.length === 0
+            ) {
+
+                tbody.innerHTML = `
+                    <tr>
+                        <td
+                            colspan="6"
+                            class="empty-row"
+                        >
+                            Veritabanında mağaza bulunamadı.
+                        </td>
+                    </tr>
+                `;
+
+                return;
+
+            }
+
+
+            tbody.innerHTML = "";
+
+
+            stores.forEach(
+                function(store) {
+
+                    const row =
+                        document.createElement(
+                            "tr"
+                        );
+
+
+                    const status =
+                        Number(
+                            store.active
+                        ) === 1
+                        ? `
+                            <span class="status-active">
+                                Aktif
+                            </span>
+                          `
+                        : `
+                            <span class="status-passive">
+                                Pasif
+                            </span>
+                          `;
+
+
+                    row.innerHTML = `
+
+                        <td>
+                            ${escapeHtml(
+                                store.store_code
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                store.store_name
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                store.city
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                store.district
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                store.neighborhood
+                            )}
+                        </td>
+
+                        <td>
+                            ${status}
+                        </td>
+
+                    `;
+
+
+                    tbody.appendChild(
+                        row
+                    );
+
+                }
+            );
+
+        }
+
+
+        // =========================================
+        // ARAMA
+        // =========================================
+
+        function filterStores() {
+
+            const searchInput =
+                document.getElementById(
+                    "searchInput"
+                );
+
+
+            const search =
+                searchInput.value
+                    .trim()
+                    .toLocaleLowerCase(
+                        "tr-TR"
+                    );
+
+
+            if (!search) {
+
+                renderStores(
+                    allStores
+                );
+
+                return;
+
+            }
+
+
+            const filtered =
+                allStores.filter(
+                    function(store) {
+
+                        const text = [
+
+                            store.store_code,
+
+                            store.store_name,
+
+                            store.city,
+
+                            store.district,
+
+                            store.neighborhood
+
+                        ]
+                        .filter(
+                            value =>
+                                value !== null &&
+                                value !== undefined
+                        )
+                        .join(" ")
+                        .toLocaleLowerCase(
+                            "tr-TR"
+                        );
+
+
+                        return text.includes(
+                            search
+                        );
+
+                    }
+                );
+
+
+            renderStores(
+                filtered
+            );
+
+        }
+
+
+        // =========================================
+        // HTML GÜVENLİĞİ
+        // =========================================
+
+        function escapeHtml(
+            value
+        ) {
+
+            if (
+                value === null ||
+                value === undefined
+            ) {
+
+                return "";
+
+            }
+
+
+            return String(value)
+
+                .replace(
+                    /&/g,
+                    "&amp;"
+                )
+
+                .replace(
+                    /</g,
+                    "&lt;"
+                )
+
+                .replace(
+                    />/g,
+                    "&gt;"
+                )
+
+                .replace(
+                    /"/g,
+                    "&quot;"
+                )
+
+                .replace(
+                    /'/g,
+                    "&#039;"
+                );
+
+        }
+
+
+        // =========================================
+        // EVENTLER
+        // =========================================
+
+        document
+            .getElementById(
+                "searchInput"
+            )
+            .addEventListener(
+                "input",
+                filterStores
+            );
+
+
+        document
+            .getElementById(
+                "refreshButton"
+            )
+            .addEventListener(
+                "click",
+                loadStores
+            );
+
+
+        // =========================================
+        // SAYFA AÇILINCA ÇALIŞTIR
+        // =========================================
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            function() {
+
+                loadStores();
+
+            }
+        );
+
+    </script>
 
 </body>
+
 </html>
