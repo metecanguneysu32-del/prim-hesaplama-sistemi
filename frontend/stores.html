@@ -10,9 +10,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>
-        Mağazalar | Prim Hesaplama Sistemi
-    </title>
+    <title>Mağazalar | Prim Hesaplama Sistemi</title>
 
     <link
         rel="stylesheet"
@@ -30,7 +28,7 @@
         }
 
         .page-header h1 {
-            margin: 0 0 7px;
+            margin: 0 0 6px;
             color: #111827;
             font-size: 28px;
         }
@@ -70,21 +68,17 @@
 
         .search-box {
             flex: 1;
+            max-width: 500px;
         }
 
         .search-box input {
             width: 100%;
-            box-sizing: border-box;
             height: 42px;
             padding: 0 14px;
             border: 1px solid #d1d5db;
             border-radius: 8px;
+            box-sizing: border-box;
             font-size: 14px;
-            outline: none;
-        }
-
-        .search-box input:focus {
-            border-color: #2563eb;
         }
 
         .refresh-button {
@@ -93,8 +87,7 @@
             border: none;
             border-radius: 8px;
             background: #2563eb;
-            color: #ffffff;
-            font-size: 14px;
+            color: white;
             font-weight: 600;
             cursor: pointer;
         }
@@ -103,76 +96,64 @@
             background: #1d4ed8;
         }
 
-        .summary {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .summary-card {
-            min-width: 180px;
-            padding: 18px;
+        .table-card {
             background: #ffffff;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
+            overflow: hidden;
         }
 
-        .summary-label {
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table-header h2 {
+            margin: 0;
+            font-size: 17px;
+            color: #111827;
+        }
+
+        .store-count {
             color: #6b7280;
             font-size: 13px;
-            margin-bottom: 7px;
         }
 
-        .summary-value {
-            color: #111827;
-            font-size: 25px;
-            font-weight: 700;
-        }
-
-        .table-container {
+        .table-wrapper {
             overflow-x: auto;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 800px;
-        }
-
-        thead {
-            background: #f9fafb;
         }
 
         th {
-            padding: 14px 16px;
+            padding: 13px 15px;
             text-align: left;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
             color: #374151;
             font-size: 13px;
-            font-weight: 700;
-            border-bottom: 1px solid #e5e7eb;
         }
 
         td {
-            padding: 14px 16px;
-            color: #4b5563;
-            font-size: 13px;
+            padding: 14px 15px;
             border-bottom: 1px solid #f3f4f6;
+            color: #374151;
+            font-size: 14px;
         }
 
         tbody tr:hover {
             background: #f9fafb;
         }
 
-        tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .status-active {
+        .status {
             display: inline-block;
-            padding: 5px 10px;
+            padding: 4px 9px;
             border-radius: 20px;
             background: #dcfce7;
             color: #166534;
@@ -180,32 +161,25 @@
             font-weight: 600;
         }
 
-        .status-passive {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            background: #fee2e2;
-            color: #991b1b;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .empty-row {
+        .empty-message {
+            padding: 45px 20px;
             text-align: center;
-            padding: 35px !important;
             color: #6b7280;
         }
 
-        .loading-row {
-            text-align: center;
-            padding: 35px !important;
-            color: #6b7280;
+        .error-message {
+            margin: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
         }
 
-        .error-row {
+        .loading-message {
+            padding: 45px 20px;
             text-align: center;
-            padding: 35px !important;
-            color: #991b1b;
+            color: #6b7280;
         }
 
         @media (max-width: 700px) {
@@ -220,12 +194,8 @@
                 align-items: stretch;
             }
 
-            .summary {
-                flex-direction: column;
-            }
-
-            .summary-card {
-                width: auto;
+            .search-box {
+                max-width: none;
             }
 
         }
@@ -237,92 +207,86 @@
 
 <body>
 
-    <main class="container">
+<div class="container">
 
-        <!-- =========================================
-             BAŞLIK
-             ========================================= -->
+    <!-- =========================================
+         BAŞLIK
+         ========================================= -->
 
-        <header class="page-header">
+    <header class="page-header">
 
-            <div>
+        <div>
 
-                <h1>
-                    Mağazalar
-                </h1>
+            <h1>
+                Mağazalar
+            </h1>
 
-                <p>
-                    Sistemde kayıtlı mağazaları görüntüleyin.
-                </p>
+            <p>
+                Sistemde kayıtlı mağazaları görüntüleyin.
+            </p>
 
-            </div>
+        </div>
 
-            <a
-                href="/dashboard"
-                class="back-button"
+        <a
+            href="/dashboard"
+            class="back-button"
+        >
+            ← Dashboard
+        </a>
+
+    </header>
+
+
+    <!-- =========================================
+         ARAMA / YENİLE
+         ========================================= -->
+
+    <section class="toolbar">
+
+        <div class="search-box">
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Mağaza kodu, mağaza adı, il veya ilçe ara..."
             >
-                ← Dashboard
-            </a>
 
-        </header>
+        </div>
+
+        <button
+            type="button"
+            class="refresh-button"
+            id="refreshButton"
+        >
+            Yenile
+        </button>
+
+    </section>
 
 
-        <!-- =========================================
-             ARAMA / YENİLE
-             ========================================= -->
+    <!-- =========================================
+         TABLO
+         ========================================= -->
 
-        <section class="toolbar">
+    <section class="table-card">
 
-            <div class="search-box">
+        <div class="table-header">
 
-                <input
-                    type="text"
-                    id="searchInput"
-                    placeholder="Mağaza kodu, mağaza adı, il, ilçe veya mahalle ara..."
-                >
+            <h2>
+                Mağaza Listesi
+            </h2>
 
-            </div>
-
-            <button
-                type="button"
-                id="refreshButton"
-                class="refresh-button"
+            <span
+                class="store-count"
+                id="storeCount"
             >
-                ↻ Yenile
-            </button>
+                0 mağaza
+            </span>
 
-        </section>
-
-
-        <!-- =========================================
-             ÖZET
-             ========================================= -->
-
-        <section class="summary">
-
-            <div class="summary-card">
-
-                <div class="summary-label">
-                    Toplam Mağaza
-                </div>
-
-                <div
-                    class="summary-value"
-                    id="totalStores"
-                >
-                    0
-                </div>
-
-            </div>
-
-        </section>
+        </div>
 
 
-        <!-- =========================================
-             MAĞAZA TABLOSU
-             ========================================= -->
-
-        <section class="table-container">
+        <div class="table-wrapper">
 
             <table>
 
@@ -358,14 +322,13 @@
 
                 </thead>
 
-
                 <tbody id="storesTableBody">
 
                     <tr>
 
                         <td
                             colspan="6"
-                            class="loading-row"
+                            class="loading-message"
                         >
                             Mağazalar yükleniyor...
                         </td>
@@ -376,400 +339,399 @@
 
             </table>
 
-        </section>
+        </div>
 
-    </main>
+    </section>
 
+</div>
 
-    <!-- =========================================
-         JAVASCRIPT
-         ========================================= -->
 
-    <script>
+<script>
 
-        let allStores = [];
+    let allStores = [];
 
 
-        // =========================================
-        // MAĞAZALARI GETİR
-        // =========================================
+    // ==================================================
+    // MAĞAZALARI GETİR
+    // ==================================================
 
-        async function loadStores() {
+    async function loadStores() {
 
-            const tbody =
-                document.getElementById(
-                    "storesTableBody"
-                );
-
-            const totalStores =
-                document.getElementById(
-                    "totalStores"
-                );
-
-            tbody.innerHTML = `
-                <tr>
-                    <td
-                        colspan="6"
-                        class="loading-row"
-                    >
-                        Mağazalar yükleniyor...
-                    </td>
-                </tr>
-            `;
-
-            try {
-
-                const response =
-                    await fetch(
-                        "/api/stores",
-                        {
-                            method: "GET"
-                        }
-                    );
-
-
-                const data =
-                    await response.json();
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        data.message ||
-                        "Mağazalar alınamadı."
-                    );
-
-                }
-
-
-                if (!data.success) {
-
-                    throw new Error(
-                        data.message ||
-                        "Mağazalar alınamadı."
-                    );
-
-                }
-
-
-                allStores =
-                    Array.isArray(
-                        data.stores
-                    )
-                    ? data.stores
-                    : [];
-
-
-                totalStores.textContent =
-                    allStores.length;
-
-
-                renderStores(
-                    allStores
-                );
-
-
-            } catch (error) {
-
-                console.error(
-                    "Mağaza yükleme hatası:",
-                    error
-                );
-
-
-                totalStores.textContent =
-                    "0";
-
-
-                tbody.innerHTML = `
-                    <tr>
-                        <td
-                            colspan="6"
-                            class="error-row"
-                        >
-                            Mağazalar yüklenemedi:
-                            ${escapeHtml(error.message)}
-                        </td>
-                    </tr>
-                `;
-
-            }
-
-        }
-
-
-        // =========================================
-        // MAĞAZALARI TABLOYA YAZ
-        // =========================================
-
-        function renderStores(
-            stores
-        ) {
-
-            const tbody =
-                document.getElementById(
-                    "storesTableBody"
-                );
-
-
-            if (
-                !stores ||
-                stores.length === 0
-            ) {
-
-                tbody.innerHTML = `
-                    <tr>
-                        <td
-                            colspan="6"
-                            class="empty-row"
-                        >
-                            Veritabanında mağaza bulunamadı.
-                        </td>
-                    </tr>
-                `;
-
-                return;
-
-            }
-
-
-            tbody.innerHTML = "";
-
-
-            stores.forEach(
-                function(store) {
-
-                    const row =
-                        document.createElement(
-                            "tr"
-                        );
-
-
-                    const status =
-                        Number(
-                            store.active
-                        ) === 1
-                        ? `
-                            <span class="status-active">
-                                Aktif
-                            </span>
-                          `
-                        : `
-                            <span class="status-passive">
-                                Pasif
-                            </span>
-                          `;
-
-
-                    row.innerHTML = `
-
-                        <td>
-                            ${escapeHtml(
-                                store.store_code
-                            )}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(
-                                store.store_name
-                            )}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(
-                                store.city
-                            )}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(
-                                store.district
-                            )}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(
-                                store.neighborhood
-                            )}
-                        </td>
-
-                        <td>
-                            ${status}
-                        </td>
-
-                    `;
-
-
-                    tbody.appendChild(
-                        row
-                    );
-
-                }
+        const tableBody =
+            document.getElementById(
+                "storesTableBody"
             );
 
-        }
+        const storeCount =
+            document.getElementById(
+                "storeCount"
+            );
 
+        tableBody.innerHTML = `
+            <tr>
+                <td
+                    colspan="6"
+                    class="loading-message"
+                >
+                    Mağazalar yükleniyor...
+                </td>
+            </tr>
+        `;
 
-        // =========================================
-        // ARAMA
-        // =========================================
+        try {
 
-        function filterStores() {
-
-            const searchInput =
-                document.getElementById(
-                    "searchInput"
-                );
-
-
-            const search =
-                searchInput.value
-                    .trim()
-                    .toLocaleLowerCase(
-                        "tr-TR"
-                    );
-
-
-            if (!search) {
-
-                renderStores(
-                    allStores
-                );
-
-                return;
-
-            }
-
-
-            const filtered =
-                allStores.filter(
-                    function(store) {
-
-                        const text = [
-
-                            store.store_code,
-
-                            store.store_name,
-
-                            store.city,
-
-                            store.district,
-
-                            store.neighborhood
-
-                        ]
-                        .filter(
-                            value =>
-                                value !== null &&
-                                value !== undefined
-                        )
-                        .join(" ")
-                        .toLocaleLowerCase(
-                            "tr-TR"
-                        );
-
-
-                        return text.includes(
-                            search
-                        );
-
+            const response =
+                await fetch(
+                    "/api/stores",
+                    {
+                        method: "GET",
+                        headers: {
+                            "Accept":
+                                "application/json"
+                        }
                     }
                 );
 
 
-            renderStores(
-                filtered
-            );
+            if (!response.ok) {
 
-        }
-
-
-        // =========================================
-        // HTML GÜVENLİĞİ
-        // =========================================
-
-        function escapeHtml(
-            value
-        ) {
-
-            if (
-                value === null ||
-                value === undefined
-            ) {
-
-                return "";
-
-            }
-
-
-            return String(value)
-
-                .replace(
-                    /&/g,
-                    "&amp;"
-                )
-
-                .replace(
-                    /</g,
-                    "&lt;"
-                )
-
-                .replace(
-                    />/g,
-                    "&gt;"
-                )
-
-                .replace(
-                    /"/g,
-                    "&quot;"
-                )
-
-                .replace(
-                    /'/g,
-                    "&#039;"
+                throw new Error(
+                    "Sunucu hatası: HTTP " +
+                    response.status
                 );
 
+            }
+
+
+            const data =
+                await response.json();
+
+
+            console.log(
+                "API cevabı:",
+                data
+            );
+
+
+            if (
+                !data ||
+                data.success !== true
+            ) {
+
+                throw new Error(
+                    data &&
+                    data.message
+                        ? data.message
+                        : "Mağaza verisi alınamadı."
+                );
+
+            }
+
+
+            /*
+             * Flask API:
+             *
+             * {
+             *   success: true,
+             *   stores: [...]
+             * }
+             */
+
+            allStores =
+                Array.isArray(data.stores)
+                    ? data.stores
+                    : [];
+
+
+            renderStores(
+                allStores
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Mağaza yükleme hatası:",
+                error
+            );
+
+
+            storeCount.textContent =
+                "0 mağaza";
+
+
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6">
+
+                        <div class="error-message">
+
+                            Mağazalar yüklenemedi.
+
+                            <br><br>
+
+                            Hata:
+                            ${escapeHtml(
+                                error.message
+                            )}
+
+                        </div>
+
+                    </td>
+                </tr>
+            `;
+
+        }
+
+    }
+
+
+    // ==================================================
+    // MAĞAZALARI TABLOYA BAS
+    // ==================================================
+
+    function renderStores(
+        stores
+    ) {
+
+        const tableBody =
+            document.getElementById(
+                "storesTableBody"
+            );
+
+        const storeCount =
+            document.getElementById(
+                "storeCount"
+            );
+
+
+        storeCount.textContent =
+            stores.length +
+            " mağaza";
+
+
+        if (
+            !stores ||
+            stores.length === 0
+        ) {
+
+            tableBody.innerHTML = `
+                <tr>
+                    <td
+                        colspan="6"
+                        class="empty-message"
+                    >
+                        Kayıtlı mağaza bulunamadı.
+                    </td>
+                </tr>
+            `;
+
+            return;
+
         }
 
 
-        // =========================================
-        // EVENTLER
-        // =========================================
+        tableBody.innerHTML =
+            stores.map(
+                function(store) {
 
-        document
-            .getElementById(
+                    return `
+
+                        <tr>
+
+                            <td>
+                                ${escapeHtml(
+                                    store.store_code || ""
+                                )}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(
+                                    store.store_name || ""
+                                )}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(
+                                    store.city || ""
+                                )}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(
+                                    store.district || ""
+                                )}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(
+                                    store.neighborhood || ""
+                                )}
+                            </td>
+
+                            <td>
+
+                                <span class="status">
+                                    Aktif
+                                </span>
+
+                            </td>
+
+                        </tr>
+
+                    `;
+
+                }
+            ).join("");
+
+    }
+
+
+    // ==================================================
+    // ARAMA
+    // ==================================================
+
+    function filterStores() {
+
+        const searchInput =
+            document.getElementById(
                 "searchInput"
-            )
-            .addEventListener(
-                "input",
-                filterStores
+            );
+
+        const search =
+            searchInput.value
+                .trim()
+                .toLocaleLowerCase(
+                    "tr-TR"
+                );
+
+
+        if (!search) {
+
+            renderStores(
+                allStores
+            );
+
+            return;
+
+        }
+
+
+        const filtered =
+            allStores.filter(
+                function(store) {
+
+                    const values = [
+
+                        store.store_code,
+                        store.store_name,
+                        store.city,
+                        store.district,
+                        store.neighborhood
+
+                    ];
+
+
+                    return values.some(
+                        function(value) {
+
+                            return String(
+                                value || ""
+                            )
+                            .toLocaleLowerCase(
+                                "tr-TR"
+                            )
+                            .includes(
+                                search
+                            );
+
+                        }
+                    );
+
+                }
             );
 
 
-        document
-            .getElementById(
-                "refreshButton"
-            )
-            .addEventListener(
-                "click",
-                loadStores
-            );
-
-
-        // =========================================
-        // SAYFA AÇILINCA ÇALIŞTIR
-        // =========================================
-
-        document.addEventListener(
-            "DOMContentLoaded",
-            function() {
-
-                loadStores();
-
-            }
+        renderStores(
+            filtered
         );
 
-    </script>
+    }
+
+
+    // ==================================================
+    // HTML GÜVENLİĞİ
+    // ==================================================
+
+    function escapeHtml(
+        value
+    ) {
+
+        return String(
+            value || ""
+        )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+    }
+
+
+    // ==================================================
+    // OLAYLAR
+    // ==================================================
+
+    document
+        .getElementById(
+            "refreshButton"
+        )
+        .addEventListener(
+            "click",
+            loadStores
+        );
+
+
+    document
+        .getElementById(
+            "searchInput"
+        )
+        .addEventListener(
+            "input",
+            filterStores
+        );
+
+
+    // ==================================================
+    // SAYFA AÇILDIĞINDA
+    // ==================================================
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        function() {
+
+            loadStores();
+
+        }
+    );
+
+</script>
 
 </body>
 
