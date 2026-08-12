@@ -62,6 +62,10 @@ def clean_value(value):
     return str(value).strip()
 
 
+# ============================================================
+# SAYI NORMALLEŞTİR
+# ============================================================
+
 def normalize_number(value):
     """
     Excel'den gelen satış/hedef tutarlarını sayıya çevirir.
@@ -245,7 +249,7 @@ def read_uploaded_file(file):
 
         raise ValueError(
             "XLS dosyası için xlrd paketi gereklidir. "
-            "Şimdilik Excel dosyanızı XLSX olarak kaydedip "
+            "Lütfen Excel dosyanızı XLSX olarak kaydedip "
             "tekrar yükleyin."
         )
 
@@ -276,11 +280,19 @@ def read_uploaded_file(file):
                 "cp1254"
             )
 
-        return list(
+        result = list(
             csv.DictReader(
                 io.StringIO(text)
             )
         )
+
+        if not result:
+
+            raise ValueError(
+                "CSV dosyasında veri satırı bulunamadı."
+            )
+
+        return result
 
 
     # --------------------------------------------------------
@@ -297,6 +309,53 @@ def read_uploaded_file(file):
 # SÜTUN DEĞERİ BUL
 # ============================================================
 
+def normalize_header(value):
+
+    if value is None:
+        return ""
+
+    value = str(value).strip().lower()
+
+    replacements = {
+        "ı": "i",
+        "İ": "i",
+        "ş": "s",
+        "Ş": "s",
+        "ğ": "g",
+        "Ğ": "g",
+        "ü": "u",
+        "Ü": "u",
+        "ö": "o",
+        "Ö": "o",
+        "ç": "c",
+        "Ç": "c"
+    }
+
+    for old, new in replacements.items():
+
+        value = value.replace(
+            old,
+            new
+        )
+
+    value = value.replace(
+        " ",
+        ""
+    )
+
+    value = value.replace(
+        "_",
+        ""
+    )
+
+    value = value.replace(
+        "-",
+        ""
+    )
+
+    return value
+
+
 def get_row_value(row, *column_names):
 
     normalized_row = {}
@@ -306,26 +365,8 @@ def get_row_value(row, *column_names):
         if key is None:
             continue
 
-        normalized_key = (
-            str(key)
-            .strip()
-            .lower()
-        )
-
-        normalized_key = (
-            normalized_key
-            .replace("ı", "i")
-            .replace("İ", "i")
-            .replace("ş", "s")
-            .replace("Ş", "s")
-            .replace("ğ", "g")
-            .replace("Ğ", "g")
-            .replace("ü", "u")
-            .replace("Ü", "u")
-            .replace("ö", "o")
-            .replace("Ö", "o")
-            .replace("ç", "c")
-            .replace("Ç", "c")
+        normalized_key = normalize_header(
+            key
         )
 
         normalized_row[
@@ -334,26 +375,8 @@ def get_row_value(row, *column_names):
 
     for column_name in column_names:
 
-        normalized_name = (
-            str(column_name)
-            .strip()
-            .lower()
-        )
-
-        normalized_name = (
-            normalized_name
-            .replace("ı", "i")
-            .replace("İ", "i")
-            .replace("ş", "s")
-            .replace("Ş", "s")
-            .replace("ğ", "g")
-            .replace("Ğ", "g")
-            .replace("ü", "u")
-            .replace("Ü", "u")
-            .replace("ö", "o")
-            .replace("Ö", "o")
-            .replace("ç", "c")
-            .replace("Ç", "c")
+        normalized_name = normalize_header(
+            column_name
         )
 
         if normalized_name in normalized_row:
@@ -531,9 +554,43 @@ def api_stores():
             search
         )
 
+        # Gerçek toplam mağaza sayısı
+        connection = get_connection()
+        cursor = connection.cursor()
+
+        search_value = f"%{search}%"
+
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM stores
+            WHERE active = 1
+              AND (
+                    store_code LIKE ?
+                    OR store_name LIKE ?
+                    OR city LIKE ?
+                    OR district LIKE ?
+                    OR neighborhood LIKE ?
+              )
+            """,
+            (
+                search_value,
+                search_value,
+                search_value,
+                search_value,
+                search_value
+            )
+        )
+
+        total_count = cursor.fetchone()[0]
+
+        connection.close()
+
         return jsonify({
             "success": True,
-            "stores": stores
+            "stores": stores,
+            "count": total_count,
+            "total": total_count
         })
 
     except Exception as error:
@@ -541,7 +598,52 @@ def api_stores():
         return jsonify({
             "success": False,
             "message": str(error),
-            "stores": []
+            "stores": [],
+            "count": 0,
+            "total": 0
+        }), 500
+
+
+# ============================================================
+# MAĞAZA SAYISI
+# ============================================================
+
+@app.route(
+    "/api/stores/count",
+    methods=["GET"]
+)
+def api_stores_count():
+
+    try:
+
+        connection = get_connection()
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM stores
+            WHERE active = 1
+            """
+        )
+
+        count = cursor.fetchone()[0]
+
+        connection.close()
+
+        return jsonify({
+            "success": True,
+            "count": count,
+            "total": count
+        })
+
+    except Exception as error:
+
+        return jsonify({
+            "success": False,
+            "message": str(error),
+            "count": 0,
+            "total": 0
         }), 500
 
 
@@ -582,7 +684,8 @@ def api_search_personnel():
 
         return jsonify({
             "success": True,
-            "personnel": personnel
+            "personnel": personnel,
+            "count": len(personnel)
         })
 
     except Exception as error:
@@ -604,159 +707,317 @@ def api_search_personnel():
 )
 def import_stores():
 
+    connection = None
+
     try:
 
         file = request.files.get(
             "file"
         )
 
+        if file is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Excel dosyası gönderilmedi.",
+                "total_rows": 0,
+                "created": 0,
+                "updated": 0,
+                "skipped": 0
+            }), 400
+
+
+        # ----------------------------------------------------
+        # EXCEL'İ OKU
+        # ----------------------------------------------------
+
         rows = read_uploaded_file(
             file
         )
+
+        total_rows = len(rows)
 
         created = 0
         updated = 0
         skipped = 0
 
+        errors = []
+
+
+        # ----------------------------------------------------
+        # DATABASE
+        # ----------------------------------------------------
+
         connection = get_connection()
         cursor = connection.cursor()
 
-        for row in rows:
 
-            store_code = clean_value(
-                get_row_value(
-                    row,
-                    "Mağaza Kodu",
-                    "magaza_kodu",
-                    "store_code",
-                    "MağazaKodu"
+        # ----------------------------------------------------
+        # SATIRLARI İŞLE
+        # ----------------------------------------------------
+
+        for row_number, row in enumerate(
+            rows,
+            start=2
+        ):
+
+            try:
+
+                store_code = clean_value(
+                    get_row_value(
+                        row,
+                        "Mağaza Kodu",
+                        "Magaza Kodu",
+                        "magaza_kodu",
+                        "store_code",
+                        "Store Code",
+                        "StoreCode",
+                        "MağazaKod",
+                        "MagazaKod"
+                    )
                 )
-            )
 
-            store_name = clean_value(
-                get_row_value(
-                    row,
-                    "Mağaza Adı",
-                    "magaza_adi",
-                    "store_name",
-                    "MağazaAdı"
+                store_name = clean_value(
+                    get_row_value(
+                        row,
+                        "Mağaza Adı",
+                        "Magaza Adi",
+                        "magaza_adi",
+                        "store_name",
+                        "Store Name",
+                        "StoreName",
+                        "Mağaza",
+                        "Magaza"
+                    )
                 )
-            )
 
-            city = clean_value(
-                get_row_value(
-                    row,
-                    "İl",
-                    "Il",
-                    "il",
-                    "city"
+                city = clean_value(
+                    get_row_value(
+                        row,
+                        "İl",
+                        "Il",
+                        "il",
+                        "city",
+                        "City"
+                    )
                 )
-            )
 
-            district = clean_value(
-                get_row_value(
-                    row,
-                    "İlçe",
-                    "Ilçe",
-                    "ilce",
-                    "district"
+                district = clean_value(
+                    get_row_value(
+                        row,
+                        "İlçe",
+                        "Ilce",
+                        "ilce",
+                        "district",
+                        "District"
+                    )
                 )
-            )
 
-            neighborhood = clean_value(
-                get_row_value(
-                    row,
-                    "Mahalle",
-                    "mahalle",
-                    "neighborhood"
+                neighborhood = clean_value(
+                    get_row_value(
+                        row,
+                        "Mahalle",
+                        "mahalle",
+                        "neighborhood",
+                        "Neighborhood"
+                    )
                 )
-            )
 
-            if not store_code:
 
-                skipped += 1
-                continue
+                # ------------------------------------------------
+                # BOŞ SATIR
+                # ------------------------------------------------
 
-            if not store_name:
+                if not store_code and not store_name:
 
-                skipped += 1
-                continue
+                    skipped += 1
 
-            cursor.execute(
-                """
-                SELECT id
-                FROM stores
-                WHERE store_code = ?
-                """,
-                (store_code,)
-            )
+                    continue
 
-            existing = cursor.fetchone()
 
-            if existing:
+                # ------------------------------------------------
+                # KOD KONTROLÜ
+                # ------------------------------------------------
+
+                if not store_code:
+
+                    skipped += 1
+
+                    errors.append({
+                        "row": row_number,
+                        "error": "Mağaza kodu boş."
+                    })
+
+                    continue
+
+
+                # ------------------------------------------------
+                # AD KONTROLÜ
+                # ------------------------------------------------
+
+                if not store_name:
+
+                    skipped += 1
+
+                    errors.append({
+                        "row": row_number,
+                        "error": "Mağaza adı boş."
+                    })
+
+                    continue
+
+
+                # ------------------------------------------------
+                # MAĞAZA VAR MI?
+                # ------------------------------------------------
 
                 cursor.execute(
                     """
-                    UPDATE stores
-                    SET
-                        store_name = ?,
-                        city = ?,
-                        district = ?,
-                        neighborhood = ?
+                    SELECT
+                        id
+                    FROM stores
                     WHERE store_code = ?
                     """,
                     (
-                        store_name,
-                        city,
-                        district,
-                        neighborhood,
-                        store_code
+                        store_code,
                     )
                 )
 
-                updated += 1
+                existing = cursor.fetchone()
 
-            else:
 
-                cursor.execute(
-                    """
-                    INSERT INTO stores (
-                        store_code,
-                        store_name,
-                        city,
-                        district,
-                        neighborhood
+                # ------------------------------------------------
+                # VARSA GÜNCELLE
+                # ------------------------------------------------
+
+                if existing:
+
+                    cursor.execute(
+                        """
+                        UPDATE stores
+                        SET
+                            store_name = ?,
+                            city = ?,
+                            district = ?,
+                            neighborhood = ?,
+                            active = 1
+                        WHERE store_code = ?
+                        """,
+                        (
+                            store_name,
+                            city,
+                            district,
+                            neighborhood,
+                            store_code
+                        )
                     )
-                    VALUES (?, ?, ?, ?, ?)
-                    """,
-                    (
-                        store_code,
-                        store_name,
-                        city,
-                        district,
-                        neighborhood
-                    )
-                )
 
-                created += 1
+                    updated += 1
+
+
+                # ------------------------------------------------
+                # YOKSA EKLE
+                # ------------------------------------------------
+
+                else:
+
+                    cursor.execute(
+                        """
+                        INSERT INTO stores (
+                            store_code,
+                            store_name,
+                            city,
+                            district,
+                            neighborhood,
+                            active
+                        )
+                        VALUES (?, ?, ?, ?, ?, 1)
+                        """,
+                        (
+                            store_code,
+                            store_name,
+                            city,
+                            district,
+                            neighborhood
+                        )
+                    )
+
+                    created += 1
+
+
+            except Exception as row_error:
+
+                skipped += 1
+
+                errors.append({
+                    "row": row_number,
+                    "error": str(row_error)
+                })
+
+
+        # ----------------------------------------------------
+        # COMMIT
+        # ----------------------------------------------------
 
         connection.commit()
-        connection.close()
+
+
+        # ----------------------------------------------------
+        # AKTARIM SONRASI GERÇEK SAYI
+        # ----------------------------------------------------
+
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM stores
+            WHERE active = 1
+            """
+        )
+
+        total_stores = cursor.fetchone()[0]
+
 
         return jsonify({
             "success": True,
             "message": "Mağaza aktarımı tamamlandı.",
+            "total_rows": total_rows,
             "created": created,
             "updated": updated,
-            "skipped": skipped
+            "skipped": skipped,
+            "total_stores": total_stores,
+            "count": total_stores,
+            "errors": errors
         })
+
 
     except Exception as error:
 
+        if connection is not None:
+
+            try:
+                connection.rollback()
+            except Exception:
+                pass
+
         return jsonify({
             "success": False,
-            "message": str(error)
+            "message": str(error),
+            "total_rows": 0,
+            "created": 0,
+            "updated": 0,
+            "skipped": 0,
+            "count": 0
         }), 400
+
+
+    finally:
+
+        if connection is not None:
+
+            try:
+                connection.close()
+            except Exception:
+                pass
 
 
 # ============================================================
@@ -769,6 +1030,8 @@ def import_stores():
 )
 def import_personnel():
 
+    connection = None
+
     try:
 
         file = request.files.get(
@@ -778,6 +1041,8 @@ def import_personnel():
         rows = read_uploaded_file(
             file
         )
+
+        total_rows = len(rows)
 
         created = 0
         updated = 0
@@ -792,7 +1057,7 @@ def import_personnel():
                 get_row_value(
                     row,
                     "Mağaza Kodu",
-                    "magaza_kodu",
+                    "Magaza Kodu",
                     "store_code"
                 )
             )
@@ -801,7 +1066,7 @@ def import_personnel():
                 get_row_value(
                     row,
                     "Personel Kodu",
-                    "personel_kodu",
+                    "Personel Kod",
                     "personnel_code"
                 )
             )
@@ -810,7 +1075,8 @@ def import_personnel():
                 get_row_value(
                     row,
                     "Personel Adı",
-                    "personel_adi",
+                    "Personel Ad Soyad",
+                    "Personel",
                     "personnel_name"
                 )
             )
@@ -820,6 +1086,8 @@ def import_personnel():
                     row,
                     "Unvan",
                     "Ünvan",
+                    "Görev",
+                    "Pozisyon",
                     "title"
                 )
             )
@@ -839,7 +1107,9 @@ def import_personnel():
                 FROM stores
                 WHERE store_code = ?
                 """,
-                (store_code,)
+                (
+                    store_code,
+                )
             )
 
             store = cursor.fetchone()
@@ -857,7 +1127,9 @@ def import_personnel():
                 FROM personnel
                 WHERE personnel_code = ?
                 """,
-                (personnel_code,)
+                (
+                    personnel_code,
+                )
             )
 
             existing = cursor.fetchone()
@@ -906,22 +1178,36 @@ def import_personnel():
                 created += 1
 
         connection.commit()
-        connection.close()
 
         return jsonify({
             "success": True,
             "message": "Personel aktarımı tamamlandı.",
+            "total_rows": total_rows,
             "created": created,
             "updated": updated,
-            "skipped": skipped
+            "skipped": skipped,
+            "count": created + updated
         })
 
     except Exception as error:
+
+        if connection is not None:
+
+            try:
+                connection.rollback()
+            except Exception:
+                pass
 
         return jsonify({
             "success": False,
             "message": str(error)
         }), 400
+
+    finally:
+
+        if connection is not None:
+
+            connection.close()
 
 
 # ============================================================
@@ -961,6 +1247,8 @@ def import_targets():
             file
         )
 
+        total_rows = len(rows)
+
         count = 0
         skipped = 0
 
@@ -970,7 +1258,7 @@ def import_targets():
                 get_row_value(
                     row,
                     "Mağaza Kodu",
-                    "magaza_kodu",
+                    "Magaza Kodu",
                     "store_code"
                 )
             )
@@ -1005,14 +1293,16 @@ def import_targets():
                 FROM stores
                 WHERE store_code = ?
                 """,
-                (store_code,)
+                (
+                    store_code,
+                )
             )
 
             store = cursor.fetchone()
 
-            if not store:
+            connection.close()
 
-                connection.close()
+            if not store:
 
                 skipped += 1
                 continue
@@ -1024,13 +1314,12 @@ def import_targets():
                 target_amount=target_amount
             )
 
-            connection.close()
-
             count += 1
 
         return jsonify({
             "success": True,
             "message": "Hedef aktarımı tamamlandı.",
+            "total_rows": total_rows,
             "count": count,
             "skipped": skipped
         })
@@ -1052,6 +1341,8 @@ def import_targets():
     methods=["POST"]
 )
 def import_sales():
+
+    connection = None
 
     try:
 
@@ -1080,6 +1371,8 @@ def import_sales():
             file
         )
 
+        total_rows = len(rows)
+
         count = 0
         skipped = 0
 
@@ -1092,7 +1385,7 @@ def import_sales():
                 get_row_value(
                     row,
                     "Mağaza Kodu",
-                    "magaza_kodu",
+                    "Magaza Kodu",
                     "store_code"
                 )
             )
@@ -1109,9 +1402,10 @@ def import_sales():
             amount = get_row_value(
                 row,
                 "Toplam Satış",
-                "toplam_satis",
                 "Toplam Satis",
+                "toplam_satis",
                 "Bireysel Satış",
+                "Bireysel Satis",
                 "bireysel_satis",
                 "sales",
                 "amount"
@@ -1136,7 +1430,9 @@ def import_sales():
                 FROM stores
                 WHERE store_code = ?
                 """,
-                (store_code,)
+                (
+                    store_code,
+                )
             )
 
             store = cursor.fetchone()
@@ -1228,7 +1524,6 @@ def import_sales():
             count += 1
 
         connection.commit()
-        connection.close()
 
         return jsonify({
             "success": True,
@@ -1236,16 +1531,30 @@ def import_sales():
                 "Personel bireysel "
                 "normal satış aktarımı tamamlandı."
             ),
+            "total_rows": total_rows,
             "count": count,
             "skipped": skipped
         })
 
     except Exception as error:
 
+        if connection is not None:
+
+            try:
+                connection.rollback()
+            except Exception:
+                pass
+
         return jsonify({
             "success": False,
             "message": str(error)
         }), 400
+
+    finally:
+
+        if connection is not None:
+
+            connection.close()
 
 
 # ============================================================
