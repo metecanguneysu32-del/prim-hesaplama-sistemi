@@ -55,6 +55,7 @@ init_database()
 # ============================================================
 
 def clean_value(value):
+
     if value is None:
         return ""
 
@@ -80,7 +81,6 @@ def normalize_number(value):
     if value is None:
         return 0.0
 
-    # Excel hücresi zaten sayı ise
     if isinstance(value, (int, float)):
         return float(value)
 
@@ -95,32 +95,31 @@ def normalize_number(value):
     value = value.replace("Tl", "")
     value = value.replace(" ", "")
 
-    # Hem nokta hem virgül varsa
     if "," in value and "." in value:
 
-        # Türkçe format:
-        # 125.000,50
         if value.rfind(",") > value.rfind("."):
+
             value = value.replace(".", "")
             value = value.replace(",", ".")
 
-        # İngilizce format:
-        # 125,000.50
         else:
+
             value = value.replace(",", "")
 
-    # Sadece virgül varsa
     elif "," in value:
+
         value = value.replace(",", ".")
 
-    # Birden fazla nokta varsa
     elif value.count(".") > 1:
+
         value = value.replace(".", "")
 
     try:
+
         return float(value)
 
     except ValueError:
+
         raise ValueError(
             f"Geçersiz sayısal değer: {value}"
         )
@@ -131,21 +130,9 @@ def normalize_number(value):
 # ============================================================
 
 def read_uploaded_file(file):
-    """
-    CSV ve XLSX dosyalarını okur.
-
-    XLSX:
-        openpyxl kullanılır.
-
-    CSV:
-        UTF-8 veya CP1254 okunur.
-
-    XLS:
-        Eski Excel formatıdır.
-        xlrd kurulu değilse anlaşılır hata verir.
-    """
 
     if file is None:
+
         raise ValueError(
             "Dosya gönderilmedi."
         )
@@ -155,6 +142,7 @@ def read_uploaded_file(file):
     )
 
     if not filename:
+
         raise ValueError(
             "Dosya adı bulunamadı."
         )
@@ -162,6 +150,7 @@ def read_uploaded_file(file):
     extension = Path(
         filename
     ).suffix.lower()
+
 
     # --------------------------------------------------------
     # XLSX
@@ -186,9 +175,11 @@ def read_uploaded_file(file):
             )
 
             try:
+
                 headers = next(rows)
 
             except StopIteration:
+
                 workbook.close()
 
                 raise ValueError(
@@ -204,12 +195,12 @@ def read_uploaded_file(file):
 
             for row in rows:
 
-                # Tamamen boş satırı atla
                 if all(
                     value is None
                     or clean_value(value) == ""
                     for value in row
                 ):
+
                     continue
 
                 item = {}
@@ -220,9 +211,11 @@ def read_uploaded_file(file):
                         continue
 
                     if index < len(row):
+
                         item[header] = row[index]
 
                     else:
+
                         item[header] = None
 
                 result.append(item)
@@ -230,6 +223,7 @@ def read_uploaded_file(file):
             workbook.close()
 
             if not result:
+
                 raise ValueError(
                     "Excel dosyasında veri satırı bulunamadı."
                 )
@@ -250,8 +244,7 @@ def read_uploaded_file(file):
     if extension == ".xls":
 
         raise ValueError(
-            "XLS dosyası desteklenmesi için "
-            "xlrd paketi gereklidir. "
+            "XLS dosyası için xlrd paketi gereklidir. "
             "Şimdilik Excel dosyanızı XLSX olarak kaydedip "
             "tekrar yükleyin."
         )
@@ -266,11 +259,13 @@ def read_uploaded_file(file):
         raw = file.read()
 
         if not raw:
+
             raise ValueError(
                 "Dosya boş."
             )
 
         try:
+
             text = raw.decode(
                 "utf-8-sig"
             )
@@ -303,9 +298,6 @@ def read_uploaded_file(file):
 # ============================================================
 
 def get_row_value(row, *column_names):
-    """
-    Excel sütun isimlerini farklı yazımlarıyla bulur.
-    """
 
     normalized_row = {}
 
@@ -365,6 +357,7 @@ def get_row_value(row, *column_names):
         )
 
         if normalized_name in normalized_row:
+
             return normalized_row[
                 normalized_name
             ]
@@ -433,6 +426,54 @@ def dashboard():
 
 
 # ============================================================
+# MAĞAZALAR SAYFASI
+# ============================================================
+
+@app.route("/stores")
+def stores_page():
+
+    stores_file = (
+        FRONTEND_DIR /
+        "stores.html"
+    )
+
+    if stores_file.exists():
+
+        return render_template(
+            "stores.html"
+        )
+
+    return """
+    <!DOCTYPE html>
+    <html lang="tr">
+
+    <head>
+
+        <meta charset="UTF-8">
+
+        <title>
+            Mağazalar
+        </title>
+
+    </head>
+
+    <body>
+
+        <h1>
+            Mağazalar sayfası bulunamadı.
+        </h1>
+
+        <a href="/dashboard">
+            Dashboard'a dön
+        </a>
+
+    </body>
+
+    </html>
+    """, 404
+
+
+# ============================================================
 # VERİ AKTARMA
 # ============================================================
 
@@ -478,30 +519,6 @@ def instore_sales_page():
     methods=["GET"]
 )
 def api_stores():
-
-    search = request.args.get(
-        "q",
-        ""
-    ).strip()
-
-    try:
-
-        stores = search_stores(
-            search
-        )
-
-        return jsonify({
-            "success": True,
-            "stores": stores
-        })
-
-    except Exception as error:
-
-        return jsonify({
-            "success": False,
-            "message": str(error),
-            "stores": []
-        }), 500
 
     search = request.args.get(
         "q",
@@ -656,10 +673,12 @@ def import_stores():
             )
 
             if not store_code:
+
                 skipped += 1
                 continue
 
             if not store_name:
+
                 skipped += 1
                 continue
 
