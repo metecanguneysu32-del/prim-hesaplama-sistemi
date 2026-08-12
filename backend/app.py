@@ -4,6 +4,9 @@ import sys
 import csv
 import io
 
+from openpyxl import load_workbook
+
+
 # ============================================================
 # DOSYA YOLLARI
 # ============================================================
@@ -11,6 +14,7 @@ import io
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = BASE_DIR.parent
 FRONTEND_DIR = PROJECT_DIR / "frontend"
+
 
 # ============================================================
 # DATABASE
@@ -31,6 +35,7 @@ from database import (
     save_target
 )
 
+
 # ============================================================
 # FLASK
 # ============================================================
@@ -43,6 +48,7 @@ app = Flask(
 )
 
 init_database()
+
 
 # ============================================================
 # YARDIMCI FONKSİYONLAR
@@ -59,13 +65,24 @@ def normalize_number(value):
     """
     Excel'den gelen satış/hedef tutarlarını sayıya çevirir.
 
-    Örnek:
+    Desteklenen örnekler:
+
     125000
     125.000
     125.000,50
     125000,50
     125,000.50
+    125000.50
+    125.000 TL
+    125.000,50 ₺
     """
+
+    if value is None:
+        return 0.0
+
+    # Excel hücresi zaten sayı ise
+    if isinstance(value, (int, float)):
+        return float(value)
 
     value = clean_value(value)
 
@@ -74,33 +91,36 @@ def normalize_number(value):
 
     value = value.replace("₺", "")
     value = value.replace("TL", "")
+    value = value.replace("tl", "")
+    value = value.replace("Tl", "")
     value = value.replace(" ", "")
 
+    # Hem nokta hem virgül varsa
     if "," in value and "." in value:
 
+        # Türkçe format:
+        # 125.000,50
         if value.rfind(",") > value.rfind("."):
-
             value = value.replace(".", "")
             value = value.replace(",", ".")
 
+        # İngilizce format:
+        # 125,000.50
         else:
-
             value = value.replace(",", "")
 
+    # Sadece virgül varsa
     elif "," in value:
-
         value = value.replace(",", ".")
 
+    # Birden fazla nokta varsa
     elif value.count(".") > 1:
-
         value = value.replace(".", "")
 
     try:
-
         return float(value)
 
     except ValueError:
-
         raise ValueError(
             f"Geçersiz sayısal değer: {value}"
         )
@@ -112,16 +132,17 @@ def normalize_number(value):
 
 def read_uploaded_file(file):
     """
-    XLSX, XLS ve CSV dosyalarını okur.
+    CSV ve XLSX dosyalarını okur.
 
     XLSX:
-        openpyxl
-
-    XLS:
-        pandas + xlrd
+        openpyxl kullanılır.
 
     CSV:
-        utf-8-sig / utf-8 / cp1254 / latin-1
+        UTF-8 veya CP1254 okunur.
+
+    XLS:
+        Eski Excel formatıdır.
+        xlrd kurulu değilse anlaşılır hata verir.
     """
 
     if file is None:
@@ -129,7 +150,9 @@ def read_uploaded_file(file):
             "Dosya gönderilmedi."
         )
 
-    filename = file.filename or ""
+    filename = clean_value(
+        file.filename
+    )
 
     if not filename:
         raise ValueError(
@@ -140,15 +163,13 @@ def read_uploaded_file(file):
         filename
     ).suffix.lower()
 
-    # ========================================================
+    # --------------------------------------------------------
     # XLSX
-    # ========================================================
+    # --------------------------------------------------------
 
     if extension == ".xlsx":
 
         try:
-
-            from openpyxl import load_workbook
 
             file.stream.seek(0)
 
@@ -160,37 +181,36 @@ def read_uploaded_file(file):
 
             worksheet = workbook.active
 
-            rows = list(
-                worksheet.iter_rows(
-                    values_only=True
-                )
+            rows = worksheet.iter_rows(
+                values_only=True
             )
 
-            workbook.close()
+            try:
+                headers = next(rows)
 
-            if not rows:
+            except StopIteration:
+                workbook.close()
 
                 raise ValueError(
                     "Excel dosyası boş."
                 )
 
-            headers = []
-
-            for header in rows[0]:
-
-                if header is None:
-
-                    headers.append("")
-
-                else:
-
-                    headers.append(
-                        str(header).strip()
-                    )
+            headers = [
+                clean_value(header)
+                for header in headers
+            ]
 
             result = []
 
-            for row in rows[1:]:
+            for row in rows:
+
+                # Tamamen boş satırı atla
+                if all(
+                    value is None
+                    or clean_value(value) == ""
+                    for value in row
+                ):
+                    continue
 
                 item = {}
 
@@ -200,27 +220,16 @@ def read_uploaded_file(file):
                         continue
 
                     if index < len(row):
-
-                        value = row[index]
+                        item[header] = row[index]
 
                     else:
+                        item[header] = None
 
-                        value = None
+                result.append(item)
 
-                    item[header] = value
-
-                # Tamamen boş satırları at
-
-                if any(
-                    value is not None
-                    and str(value).strip() != ""
-                    for value in item.values()
-                ):
-
-                    result.append(item)
+            workbook.close()
 
             if not result:
-
                 raise ValueError(
                     "Excel dosyasında veri satırı bulunamadı."
                 )
@@ -233,85 +242,43 @@ def read_uploaded_file(file):
                 f"XLSX dosyası okunamadı: {error}"
             )
 
-    # ========================================================
+
+    # --------------------------------------------------------
     # XLS
-    # ========================================================
+    # --------------------------------------------------------
 
     if extension == ".xls":
 
-        try:
+        raise ValueError(
+            "XLS dosyası desteklenmesi için "
+            "xlrd paketi gereklidir. "
+            "Şimdilik Excel dosyanızı XLSX olarak kaydedip "
+            "tekrar yükleyin."
+        )
 
-            import pandas as pd
 
-            file.stream.seek(0)
-
-            dataframe = pd.read_excel(
-                file.stream,
-                engine="xlrd"
-            )
-
-            dataframe = dataframe.fillna("")
-
-            return dataframe.to_dict(
-                orient="records"
-            )
-
-        except ImportError:
-
-            raise ValueError(
-                "XLS dosyası için xlrd kütüphanesi gerekli. "
-                "Lütfen XLSX formatında dosya yükleyin."
-            )
-
-        except Exception as error:
-
-            raise ValueError(
-                f"XLS dosyası okunamadı: {error}"
-            )
-
-    # ========================================================
+    # --------------------------------------------------------
     # CSV
-    # ========================================================
+    # --------------------------------------------------------
 
     if extension == ".csv":
-
-        file.stream.seek(0)
 
         raw = file.read()
 
         if not raw:
-
             raise ValueError(
                 "Dosya boş."
             )
 
-        encodings = [
-            "utf-8-sig",
-            "utf-8",
-            "cp1254",
-            "latin-1"
-        ]
+        try:
+            text = raw.decode(
+                "utf-8-sig"
+            )
 
-        text = None
+        except UnicodeDecodeError:
 
-        for encoding in encodings:
-
-            try:
-
-                text = raw.decode(
-                    encoding
-                )
-
-                break
-
-            except UnicodeDecodeError:
-
-                continue
-
-        if text is None:
-
-            raise ValueError(
-                "CSV dosyasının karakter kodlaması okunamadı."
+            text = raw.decode(
+                "cp1254"
             )
 
         return list(
@@ -320,14 +287,89 @@ def read_uploaded_file(file):
             )
         )
 
-    # ========================================================
-    # DESTEKLENMEYEN DOSYA
-    # ========================================================
+
+    # --------------------------------------------------------
+    # DESTEKLENMEYEN FORMAT
+    # --------------------------------------------------------
 
     raise ValueError(
         "Desteklenmeyen dosya formatı. "
-        "Lütfen XLSX, XLS veya CSV dosyası yükleyin."
+        "Lütfen XLSX veya CSV dosyası yükleyin."
     )
+
+
+# ============================================================
+# SÜTUN DEĞERİ BUL
+# ============================================================
+
+def get_row_value(row, *column_names):
+    """
+    Excel sütun isimlerini farklı yazımlarıyla bulur.
+    """
+
+    normalized_row = {}
+
+    for key, value in row.items():
+
+        if key is None:
+            continue
+
+        normalized_key = (
+            str(key)
+            .strip()
+            .lower()
+        )
+
+        normalized_key = (
+            normalized_key
+            .replace("ı", "i")
+            .replace("İ", "i")
+            .replace("ş", "s")
+            .replace("Ş", "s")
+            .replace("ğ", "g")
+            .replace("Ğ", "g")
+            .replace("ü", "u")
+            .replace("Ü", "u")
+            .replace("ö", "o")
+            .replace("Ö", "o")
+            .replace("ç", "c")
+            .replace("Ç", "c")
+        )
+
+        normalized_row[
+            normalized_key
+        ] = value
+
+    for column_name in column_names:
+
+        normalized_name = (
+            str(column_name)
+            .strip()
+            .lower()
+        )
+
+        normalized_name = (
+            normalized_name
+            .replace("ı", "i")
+            .replace("İ", "i")
+            .replace("ş", "s")
+            .replace("Ş", "s")
+            .replace("ğ", "g")
+            .replace("Ğ", "g")
+            .replace("ü", "u")
+            .replace("Ü", "u")
+            .replace("ö", "o")
+            .replace("Ö", "o")
+            .replace("ç", "c")
+            .replace("Ç", "c")
+        )
+
+        if normalized_name in normalized_row:
+            return normalized_row[
+                normalized_name
+            ]
+
+    return None
 
 
 # ============================================================
@@ -350,7 +392,8 @@ def index():
 def dashboard():
 
     dashboard_file = (
-        FRONTEND_DIR / "dashboard.html"
+        FRONTEND_DIR /
+        "dashboard.html"
     )
 
     if dashboard_file.exists():
@@ -520,8 +563,6 @@ def api_search_personnel():
 )
 def import_stores():
 
-    connection = None
-
     try:
 
         file = request.files.get(
@@ -542,47 +583,59 @@ def import_stores():
         for row in rows:
 
             store_code = clean_value(
-                row.get("Mağaza Kodu")
-                or row.get("magaza_kodu")
-                or row.get("store_code")
-                or row.get("Store Code")
+                get_row_value(
+                    row,
+                    "Mağaza Kodu",
+                    "magaza_kodu",
+                    "store_code",
+                    "MağazaKodu"
+                )
             )
 
             store_name = clean_value(
-                row.get("Mağaza Adı")
-                or row.get("magaza_adi")
-                or row.get("store_name")
-                or row.get("Store Name")
+                get_row_value(
+                    row,
+                    "Mağaza Adı",
+                    "magaza_adi",
+                    "store_name",
+                    "MağazaAdı"
+                )
             )
 
             city = clean_value(
-                row.get("İl")
-                or row.get("il")
-                or row.get("city")
-                or row.get("City")
+                get_row_value(
+                    row,
+                    "İl",
+                    "Il",
+                    "il",
+                    "city"
+                )
             )
 
             district = clean_value(
-                row.get("İlçe")
-                or row.get("ilce")
-                or row.get("district")
-                or row.get("District")
+                get_row_value(
+                    row,
+                    "İlçe",
+                    "Ilçe",
+                    "ilce",
+                    "district"
+                )
             )
 
             neighborhood = clean_value(
-                row.get("Mahalle")
-                or row.get("mahalle")
-                or row.get("neighborhood")
-                or row.get("Neighborhood")
+                get_row_value(
+                    row,
+                    "Mahalle",
+                    "mahalle",
+                    "neighborhood"
+                )
             )
 
             if not store_code:
-
                 skipped += 1
                 continue
 
             if not store_name:
-
                 skipped += 1
                 continue
 
@@ -592,9 +645,7 @@ def import_stores():
                 FROM stores
                 WHERE store_code = ?
                 """,
-                (
-                    store_code,
-                )
+                (store_code,)
             )
 
             existing = cursor.fetchone()
@@ -647,6 +698,7 @@ def import_stores():
                 created += 1
 
         connection.commit()
+        connection.close()
 
         return jsonify({
             "success": True,
@@ -658,20 +710,10 @@ def import_stores():
 
     except Exception as error:
 
-        if connection:
-
-            connection.rollback()
-
         return jsonify({
             "success": False,
             "message": str(error)
         }), 400
-
-    finally:
-
-        if connection:
-
-            connection.close()
 
 
 # ============================================================
@@ -683,8 +725,6 @@ def import_stores():
     methods=["POST"]
 )
 def import_personnel():
-
-    connection = None
 
     try:
 
@@ -706,32 +746,39 @@ def import_personnel():
         for row in rows:
 
             store_code = clean_value(
-                row.get("Mağaza Kodu")
-                or row.get("magaza_kodu")
-                or row.get("store_code")
-                or row.get("Store Code")
+                get_row_value(
+                    row,
+                    "Mağaza Kodu",
+                    "magaza_kodu",
+                    "store_code"
+                )
             )
 
             personnel_code = clean_value(
-                row.get("Personel Kodu")
-                or row.get("personel_kodu")
-                or row.get("personnel_code")
-                or row.get("Personnel Code")
+                get_row_value(
+                    row,
+                    "Personel Kodu",
+                    "personel_kodu",
+                    "personnel_code"
+                )
             )
 
             personnel_name = clean_value(
-                row.get("Personel Adı")
-                or row.get("personel_adi")
-                or row.get("personnel_name")
-                or row.get("Personnel Name")
+                get_row_value(
+                    row,
+                    "Personel Adı",
+                    "personel_adi",
+                    "personnel_name"
+                )
             )
 
             title = clean_value(
-                row.get("Unvan")
-                or row.get("Ünvan")
-                or row.get("unvan")
-                or row.get("title")
-                or row.get("Title")
+                get_row_value(
+                    row,
+                    "Unvan",
+                    "Ünvan",
+                    "title"
+                )
             )
 
             if (
@@ -749,9 +796,7 @@ def import_personnel():
                 FROM stores
                 WHERE store_code = ?
                 """,
-                (
-                    store_code,
-                )
+                (store_code,)
             )
 
             store = cursor.fetchone()
@@ -769,9 +814,7 @@ def import_personnel():
                 FROM personnel
                 WHERE personnel_code = ?
                 """,
-                (
-                    personnel_code,
-                )
+                (personnel_code,)
             )
 
             existing = cursor.fetchone()
@@ -820,6 +863,7 @@ def import_personnel():
                 created += 1
 
         connection.commit()
+        connection.close()
 
         return jsonify({
             "success": True,
@@ -831,20 +875,10 @@ def import_personnel():
 
     except Exception as error:
 
-        if connection:
-
-            connection.rollback()
-
         return jsonify({
             "success": False,
             "message": str(error)
         }), 400
-
-    finally:
-
-        if connection:
-
-            connection.close()
 
 
 # ============================================================
@@ -856,8 +890,6 @@ def import_personnel():
     methods=["POST"]
 )
 def import_targets():
-
-    connection = None
 
     try:
 
@@ -889,33 +921,25 @@ def import_targets():
         count = 0
         skipped = 0
 
-        connection = get_connection()
-        cursor = connection.cursor()
-
         for row in rows:
 
             store_code = clean_value(
-                row.get("Mağaza Kodu")
-                or row.get("magaza_kodu")
-                or row.get("store_code")
-                or row.get("Store Code")
+                get_row_value(
+                    row,
+                    "Mağaza Kodu",
+                    "magaza_kodu",
+                    "store_code"
+                )
             )
 
-            target = (
-                row.get("Hedef")
+            target = get_row_value(
+                row,
+                "Hedef",
+                "hedef",
+                "target",
+                "Hedef Tutar",
+                "target_amount"
             )
-
-            if target is None:
-
-                target = row.get(
-                    "target"
-                )
-
-            if target is None:
-
-                target = row.get(
-                    "Target"
-                )
 
             if (
                 not store_code
@@ -929,20 +953,23 @@ def import_targets():
                 target
             )
 
+            connection = get_connection()
+            cursor = connection.cursor()
+
             cursor.execute(
                 """
                 SELECT id
                 FROM stores
                 WHERE store_code = ?
                 """,
-                (
-                    store_code,
-                )
+                (store_code,)
             )
 
             store = cursor.fetchone()
 
             if not store:
+
+                connection.close()
 
                 skipped += 1
                 continue
@@ -954,9 +981,9 @@ def import_targets():
                 target_amount=target_amount
             )
 
-            count += 1
+            connection.close()
 
-        connection.commit()
+            count += 1
 
         return jsonify({
             "success": True,
@@ -967,20 +994,10 @@ def import_targets():
 
     except Exception as error:
 
-        if connection:
-
-            connection.rollback()
-
         return jsonify({
             "success": False,
             "message": str(error)
         }), 400
-
-    finally:
-
-        if connection:
-
-            connection.close()
 
 
 # ============================================================
@@ -992,8 +1009,6 @@ def import_targets():
     methods=["POST"]
 )
 def import_sales():
-
-    connection = None
 
     try:
 
@@ -1031,40 +1046,33 @@ def import_sales():
         for row in rows:
 
             store_code = clean_value(
-                row.get("Mağaza Kodu")
-                or row.get("magaza_kodu")
-                or row.get("store_code")
-                or row.get("Store Code")
+                get_row_value(
+                    row,
+                    "Mağaza Kodu",
+                    "magaza_kodu",
+                    "store_code"
+                )
             )
 
             personnel_code = clean_value(
-                row.get("Personel Kodu")
-                or row.get("personel_kodu")
-                or row.get("personnel_code")
-                or row.get("Personnel Code")
+                get_row_value(
+                    row,
+                    "Personel Kodu",
+                    "personel_kodu",
+                    "personnel_code"
+                )
             )
 
-            amount = row.get(
-                "Toplam Satış"
+            amount = get_row_value(
+                row,
+                "Toplam Satış",
+                "toplam_satis",
+                "Toplam Satis",
+                "Bireysel Satış",
+                "bireysel_satis",
+                "sales",
+                "amount"
             )
-
-            if amount is None:
-
-                amount = row.get(
-                    "Bireysel Satış"
-                )
-
-            if amount is None:
-
-                amount = row.get(
-                    "toplam_satis"
-                )
-
-            if amount is None:
-
-                amount = row.get(
-                    "individual_sales"
-                )
 
             if (
                 not store_code
@@ -1085,9 +1093,7 @@ def import_sales():
                 FROM stores
                 WHERE store_code = ?
                 """,
-                (
-                    store_code,
-                )
+                (store_code,)
             )
 
             store = cursor.fetchone()
@@ -1179,6 +1185,7 @@ def import_sales():
             count += 1
 
         connection.commit()
+        connection.close()
 
         return jsonify({
             "success": True,
@@ -1192,20 +1199,10 @@ def import_sales():
 
     except Exception as error:
 
-        if connection:
-
-            connection.rollback()
-
         return jsonify({
             "success": False,
             "message": str(error)
         }), 400
-
-    finally:
-
-        if connection:
-
-            connection.close()
 
 
 # ============================================================
@@ -1343,7 +1340,6 @@ def page_not_found(error):
 
     return """
     <!DOCTYPE html>
-
     <html lang="tr">
 
     <head>
